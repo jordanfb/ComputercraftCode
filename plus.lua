@@ -39,7 +39,8 @@ local avoidList = { -- a list of the blocks the turtle shouldn't mine.
   {"minecraft:stone", 1},
   {"minecraft:stone", 2},
   {"minecraft:stone", 3},
-  {"minecraft:lava", -1),
+  {"minecraft:lava", -1},
+  {"chisel:basalt2", -1},
 }
 
 local trashList = { -- items to drop from its inventory onto the ground if it can't put it in a chest nicely
@@ -52,7 +53,7 @@ local trashList = { -- items to drop from its inventory onto the ground if it ca
   {"minecraft:stone", 1},
   {"minecraft:stone", 2},
   {"minecraft:stone", 3},
-  {"minecraft:lava", -1)
+  {"minecraft:lava", -1},
 }
 
 function checkIfEnderChest()
@@ -110,9 +111,11 @@ end
 function organizeInventory()
   -- move everything into the earliest inventory slot possible so that we know when we're full
   for i = 15, 2, -1 do
-    turtle.select(i)
-    for j = 2, i do
-      turtle.transferTo(j) -- try to transfer them to that slot, this should combine them if there's room
+    if turtle.getItemCount(i) > 0 then
+      turtle.select(i)
+      for j = 2, i do
+        turtle.transferTo(j) -- try to transfer them to that slot, this should combine them if there's room
+      end
     end
   end
 end

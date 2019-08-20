@@ -39,6 +39,7 @@ local avoidList = { -- a list of the blocks the turtle shouldn't mine.
   {"minecraft:stone", 1},
   {"minecraft:stone", 2},
   {"minecraft:stone", 3},
+  {"minecraft:stone", 5}, -- andesite
   {"minecraft:lava", -1},
   {"chisel:basalt2", -1},
 }
@@ -53,6 +54,7 @@ local trashList = { -- items to drop from its inventory onto the ground if it ca
   {"minecraft:stone", 1},
   {"minecraft:stone", 2},
   {"minecraft:stone", 3},
+  {"minecraft:stone", 5},
   {"minecraft:lava", -1},
 }
 
@@ -216,7 +218,7 @@ function recursiveDig(originFacing, originMove, recursiveLevel) -- move is up, d
     local bool, block = turtle.inspect()
     local avoid = not bool -- if it doesn't exist, avoid it.
     for i = 1, #avoidList do
-      if block.name == avoidList[i][1] and block.metadata == avoidList[i][2] then
+      if block.name == avoidList[i][1] and (block.metadata == avoidList[i][2] or avoidList[i][2] == -1) then
         avoid = true
       end
     end
@@ -234,7 +236,7 @@ function recursiveDig(originFacing, originMove, recursiveLevel) -- move is up, d
     local bool, block = turtle.inspectUp()
     local avoid = not bool -- if it doesn't exist, avoid it.
     for i = 1, #avoidList do
-      if block.name == avoidList[i][1] and block.metadata == avoidList[i][2] then
+      if block.name == avoidList[i][1] and (block.metadata == avoidList[i][2] or avoidList[i][2] == -1) then
         avoid = true
       end
     end
@@ -252,7 +254,7 @@ function recursiveDig(originFacing, originMove, recursiveLevel) -- move is up, d
     local bool, block = turtle.inspectDown()
     local avoid = not bool -- if it doesn't exist, avoid it.
     for i = 1, #avoidList do
-      if block.name == avoidList[i][1] and block.metadata == avoidList[i][2] then
+      if block.name == avoidList[i][1] and (block.metadata == avoidList[i][2] or avoidList[i][2] == -1) then
         avoid = true
       end
     end

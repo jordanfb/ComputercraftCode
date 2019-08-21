@@ -21,6 +21,8 @@ custom_destinations = {} -- this is used for crafting items!
 
 item_display_names = {}
 
+sorting_computer_type = "sorter" -- sorter, display, terminal
+
 master_id = -1
 modem_side = ""
 reboot = false -- this is used to reboot everything after recieving this from the network
@@ -85,6 +87,21 @@ function add_item_default_destination(item_table, destination)
 	return true -- it's a new name!
 end
 
+function add_item_custom_destination(data)
+	local direction = find_direction(destination) -- if it's 'unknown' we don't care about it
+	if direction == "unknown" then
+		return false -- don't need to care about it
+	end
+	-- {packet = "set_new_item_custom_destination", data = {items = {LIST_OF_ITEMTABLES_WITH_QUANTITIES}, destination=NEWNAME}}
+	-- can include empty tables of no items for some machines (i.e. crafting)
+	-- this is basically a crafting recipie just doesn't say how much it makes (and recepies should)
+
+	-- add it to the list I guess?
+	table.insert(custom_destinations, data)
+	-- use table.remove() to remove it and decrement the list elements
+	return true -- we need to care about it!
+end
+
 function load_display_names()
 	-- loads the item display names from the file if it exists
 	item_display_names = {}
@@ -145,6 +162,26 @@ function load_default_destinations()
 		-- print("default directions:")
 		-- textutils.pagedPrint(textutils.serialise(default_destinations))
 	end
+end
+
+function input_from_set_of_choices(prompt, choices, force_lowercase)
+	local input = ""
+	while true do
+		print(prompt)
+		input = read()
+		if force_lowercase then
+			input = string.lower(input)
+		end
+		for k, v in choices do
+			if force_lowercase then
+				v = string.lower(v)
+			end
+			if v == input then
+				break -- return the input!
+			end
+		end
+	end
+	return input
 end
 
 function find_local_connections()
@@ -351,6 +388,7 @@ end
 function initialization()
 	-- just holds all the functions that should be called before it initializes
 	load_settings()
+	load_sorting_device_action()
 	load_display_names()
 	load_default_destinations()
 	check_if_replace_prefix()
@@ -361,14 +399,27 @@ function initialization()
 	-- either they have final destinations which have string names, or they have computer ids
 	-- find all the known destinations that exist in the network by sending out a network request,
 	-- that returns a dictionary with {id, {destinations...}}, which we can use to path our way to the goal I guess.
-	initialize_known_destinations()
+
+	-- initialize_known_destinations() -- not using known destinations at the moment
 	initialize_network()
 	-- fetch_networking_destinations() -- see if new destinations have been added to the network. I can't do that nicely here so we're not going to. The issue is everything is running this at the same time so nothing is responding
-	load_sorting_destinations(first_initialization or edit_destinations)
-	find_local_connections()
+	
+	if sorting_computer_type == "sorter" then
+		-- initialize sorting things!
+		load_sorting_destinations(first_initialization or edit_destinations)
+		drop_all_items_into_origin()
+		find_local_connections()
+	end
 	-- now it knows where it sorts to.
 	-- now it should tell everyone where it goes and also find out from everyone else where they go from. It now has to initialize everything.
-	get_default_destinations()
+	if sorting_destination_settings.isMaster then
+		-- give them your list of destinations
+		local packet = {packet = "set_item_default_destinations", data = default_destinations}
+		rednet.broadcast(packet, network_prefix)
+	else
+		-- find the list of destinations
+		get_default_destinations()
+	end
 end
 
 function get_display_name(item_table)
@@ -458,6 +509,23 @@ function receive_rednet_input()
 				local packet = {packet = "set_item_default_destinations", data = default_destinations}
 				rednet.send(sender_id, packet, network_prefix)
 			end
+		elseif message.packet == "set_new_item_custom_destination" then
+			-- set a custom direction for crafting/machining something
+			-- packet looks like this:
+			-- {packet = "set_new_item_custom_destination", data = {items = {LIST_OF_ITEMTABLES_WITH_QUANTITIES}, destination=NEWNAME}}
+			-- can include empty item slots, this is the order in which it is fed to the machines in question.
+			-- this will kinda suck for large numbers of items for crafting since it'll clog up the machines but that's okay I guess?
+			-- possibly more information will get sent for crafting things or whatever? We'll see I guess
+			add_item_custom_destination(message.data) -- message.data.items, message.data.destination
+
+			-- if sorting_destination_settings.isMaster then
+			-- 	-- this was sent a packet {packet = "set_new_item_custom_destination", data = {item = {ITEMTABLE}, destination=NEWNAME}}
+			-- 	if add_item_custom_destination(message.data.items, message.data.destination) then 
+			-- 		-- tell everyone the new names
+			-- 		local packet = {packet = "set_item_default_destinations", data = default_destinations}
+			-- 		rednet.broadcast(packet, network_prefix)
+			-- 	end
+			-- end
 		end
 	end
 end
@@ -487,12 +555,13 @@ function find_direction(destination)
 	return direction or "unknown" -- if it knows the direction then send it to the direction
 end
 
-function store_unknown_item()
+function store_unknown_item(count)
 	-- this stores the item in the turtle since it's lost and needs help from a human
 	-- for now just transfer it to the last open space. Perhaps light up redstone too? If there are no open spaces then god help us...
+	count = count or turtle.getItemCount()
 	for i = 16, 2, -1 do
 		if turtle.getItemCount(i) == 0 then
-			turtle.transferTo(i)
+			turtle.transferTo(i, count)
 			print("STORED UNKNOWN ITEM")
 			-- should probable broadcast the error too, just so a human can see it...
 			turtle.select(1)
@@ -504,16 +573,173 @@ function store_unknown_item()
 	return false
 end
 
+function handle_custom_destinations(item_key, count)
+	-- return true if it's handled, false if there aren't any relevant custom destinations or if there are leftover items
+	for i, custom in ipairs(custom_destinations) do
+		-- check if that recipie uses the item
+		-- custom = {destination = "dest", items = {ITEMTABLE_Including_quantity, ITEMTABLE_Including_quantity, ITEMTABLE_Including_quantity}}
+		if not custom.delivered then
+			for item_num, item_table in custom.items do
+				local possible_item_key = get_item_key(item_table)
+				if possible_item_key == item_key then
+					-- it's a match! We must do something with it! Figure out the item counts necessary and store it somehow...
+					local already_found = item_table.already_found or 0 -- if we've already stored some of the items then keep them!
+					if already_found < item_table.count then
+						-- we need to save more!
+						-- transfer it to a storage slot! If we can't do that then we're kinda boned, it's one of the limitations of the system with only suck/drop
+						item_table.already_found = already_found + store_current_item(item_table.count - already_found)
+						-- this works fine even if item_table.already_found is nil, which is perfect
+						already_found = item_table.already_found
+						-- now check if that's all we needed for the item!
+						if check_custom_direction_complete(custom) then
+							break -- if it's complete then it's going to remove it probably so we don't care about any of the other items for this delivery
+							-- since they can't match
+						end
+					end
+				end
+			end
+		end
+	end
+	-- check for any delivered custom deliveries and remove them
+	for i = #custom_destinations, 1, -1 do
+		if custom_destinations[i].delivered then
+			table.remove(custom_destinations, i)
+		end
+	end
+	return false -- basically just always return false since the turtle should deal with the leftovers I guess...
+end
+
+function check_custom_direction_complete(custom)
+	for item_num, item_table in custom.items do
+		-- find it and check if count == already_found
+		local found = item_table.already_found or 0
+		if found < item_table.count then
+			return false -- it's not ready to send
+		end
+	end
+	drop_custom_direction(custom) -- send it off!
+	return true
+end
+
+function drop_custom_direction(custom)
+	-- this is when we know the custom direction is complete, this function will send off the items
+	local direction_export = {up=turtle.dropUp, down=turtle.dropDown, forwards = turtle.drop, unknown=store_unknown_item}
+	local direction = find_direction(custom.destination)
+	if direction == "unknown" then
+		-- hopefully this'll never happen :P
+		print("ERROR WITH CUSTOM DIRECTION UNKNOWN: " .. custom.destination)
+	end
+
+	for item_num, item_table in custom.items do
+		-- find it and drop that amount in that direction
+		-- go from 2 to 16 then check 1 as a last chance so that the turtle stays organized. lol that's not going to happen for now...
+		local to_deliver = item_table.count
+		local delivered = 0
+		local item_key = get_item_key(item_table)
+		for i = 1, 16 do
+			local i_item_key = get_item_key(turtle.getItemDetail(i))
+			if i_item_key == item_key then
+				-- keep trying to dump it up to the top until it's all dumped
+				turtle.select(i)
+				local original_count = turtle.getItemCount(i)
+				local current_delivered = 0
+				while not direction_export[direction](to_deliver - delivered- current_delivered) do
+					-- keep trying forever I guess? This can cause problems if the stack size is too large but I hope it'll deal for most cases
+					-- have to re-evaluate how much to push out though
+					current_delivered = original_count - turtle.getItemCount()
+					if current_delivered + delivered >= to_deliver then
+						break -- in the off chance that this failed yet succeeded somehow
+					end
+				end
+				current_delivered = original_count - turtle.getItemCount()
+				delivered = delivered + current_delivered -- update what's been delivered
+				if delivered >= to_deliver then
+					-- break out of the loop so we can deal with the next item!
+					break
+				end
+			end
+		end
+		if delivered < to_deliver then
+			print("ERROR, CUSTOM DELIVERED TOO FEW " ..item_key)
+		end
+	end
+	custom.delivered = true
+	return true
+end
+
+function drop_all_items_into_origin()
+	-- part of initialization, store all the items in an origin chest
+	local direction = find_direction("Origin")
+	if direction == "unknown" then
+		direction = find_direction("origin")
+	end
+	local direction_export = {up=turtle.dropUp, down=turtle.dropDown, forwards = turtle.drop, unknown=store_unknown_item}
+	for i = 1, 16 do
+		turtle.select(i)
+		direction_export[direction]()
+	end
+	turtle.select(1)
+end
+
+function store_current_item(count)
+	local original_number = turtle.getItemCount()
+	if count > original_number then
+		count = original_number -- we can't store more than we have in the first place
+	end
+
+	local num_transfered = 0
+
+	for i = 16, 2, -1 do
+		-- loop backwards and try to store count items
+		if count <= num_transfered then
+			-- then we've transfered all of it
+			break
+		end
+		if turtle.transferTo(i, count - num_transfered) then
+			-- check how many we really transfered total
+			num_transfered = original_number - turtle.getItemCount()
+		end
+	end
+	return num_transfered -- let the calling function know how much was saved
+end
+
+function get_computer_type()
+	if pocket then
+		return "pda"
+	elseif turtle then
+		return "turtle"
+	end
+	return "computer"
+end
+
+function load_sorting_device_action()
+	-- is this a terminal?
+	-- is this a sorter?
+	-- is this a display?
+	-- who knows? hopefully us...
+	sorting_computer_type = settings.get(settings_prefix.."sorting_purpose", "REPLACE_THIS")
+	if sorting_computer_type == "REPLACE_THIS" then
+		sorting_computer_type = input_from_set_of_choices("Is this a 'sorter', 'display', or 'terminal'?")
+		settings.set(settings_prefix.."sorting_purpose", sorting_computer_type)
+	end
+end
+
 function sort_currently_selected()
+	if turtle.getItemCount() == 0 then
+		return -- it's already dealt with for whatever reason
+	end
 	local item = turtle.getItemDetail()
+	local item_count = turtle.getItemCount()
 	local sterile_item = steralize_item_table(item)
 	local item_key = get_item_key(item)
 	local destination = "Unknown"
-	if custom_destinations[item] ~= nil then
-		-- ~~~custom oooOOoOoO~~~
-		-- this is going to be custom amounts and directions so for now lets just ignore it ehh?
-		return
-	elseif default_destinations[item_key] ~= nil then
+	local selected = turtle.getSelected()
+	handle_custom_destinations(item_key, item_count)
+	turtle.select(selected)
+	if turtle.getItemCount() == 0 then
+		return -- we dealt with it because of a custom direction
+	end
+	if default_destinations[item_key] ~= nil then
 		destination = default_destinations[item_key]
 	end
 	local direction = find_direction(destination)
@@ -615,7 +841,7 @@ function deinitialization()
 	shut_down_network()
 end
 
-function main()
+function main_sorter_program()
 	if tArgs[1] == "reset" then
 		-- reset your settings by deleting the settings file
 		fs.delete(settings_path)
@@ -642,4 +868,4 @@ function main()
 end
 
 
-main()
+main_sorter_program()

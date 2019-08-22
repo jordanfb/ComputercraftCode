@@ -20,6 +20,8 @@ default_destinations = {} -- this is stored in a file and is used for regular op
 custom_destinations = {} -- this is used for crafting items!
 
 item_display_names = {}
+display_names_to_keys = {}
+searchable_display_names_to_keys = {}
 
 sorting_computer_type = "sorter" -- sorter, display, terminal
 
@@ -31,6 +33,171 @@ first_initialization = false -- this is true when the human should initialize th
 edit_destinations = false
 
 player_review_items = false -- this is true when it's time for the player to review items
+
+terminal_commands = {}
+
+function initialize_terminal_commands()
+	terminal_commands = {help=help_command,
+		quit=quit_self_command,
+		quit_all=quit_network_command,
+		reboot_all=reboot_network_command,
+		refresh_all_network=refresh_all_network,
+		["?"]=help_command,
+		display_knowledge=display_knowledge,
+		print_display_names=print_all_display_names,
+		search_names=search_item_names_command,
+		create_custom_destination=set_custom_destination_command,
+		}
+end
+
+function set_custom_destination_command(lower_command, command, rest)
+	-- set_new_item_custom_destination
+	slow_custom_command_entry()
+end
+
+function slow_custom_command_entry()
+	-- this is my first attempt, just for rough info
+	packet = {packet="set_new_item_custom_destination", data={items={}, destination=""}}
+	-- loop through adding new items etc, our little own set of commands here :P
+	local input = ""
+	local input_lower = ""
+	while true do
+		io.write("custom direction > ")
+		input = read()
+		input_lower = string.lower(input)
+		if input_lower == "destination" then
+			print("Enter destination: ")
+			local destination = read()
+			packet.data.destination = destination
+		elseif input_lower == "summary" then
+			print("Here is the custom destination")
+			textutils.pagedPrint(textutils.serialise(packet.data))
+		elseif input_lower == "help" or input_lower == "?" then
+			display_commands({help=true, summary=true, additem=true,  searchnames=true, send=true, nametoid=true, removeitem=true,
+							destination=true, cancel=true})
+		elseif input_lower == "additem" then
+			-- get id, get number, add it to the end
+			print("Enter item ID. enter nothing to cancel")
+			local id = read()
+			if #id > 0 then
+				local item_t = item_key_to_item_table(id)
+				if item_t ~= nil then
+					print("Enter item count, enter nothing to cancel")
+					local count = read()
+					if #count > 0 then
+						count = tonumber(count)
+						if count ~= nil then
+							-- it's a valid number. Add it.
+							item_t.count = count
+							table.insert(packet.data.items, item_t)
+							print("Succeeded in adding item")
+						else
+							print("Invalid number for count")
+						end
+					end
+				else
+					print("Invalid item id")
+				end
+			end
+		elseif input_lower == "removeitem" then
+			-- remove the last item :P
+			table.remove(packet.data.items)
+		elseif input_lower == "nametoid" then
+			io.write("Enter name to search id: ")
+			local t = item_name_to_keys(read())
+			if t == nil then
+				print("No ids for that name")
+			else
+				local s = ""
+				for i, v in ipairs(t) do
+					s = s .. v .. "\n"
+				end
+				print("Result IDs:")
+				textutils.pagedPrint(s)
+			end
+		elseif input_lower == "searchnames" then
+			local t = search_item_names(read_non_empty_string("Enter partial name to search: "))
+			print("Results:")
+			local s = ""
+			for i, v in ipairs(t) do
+				s = s .. v .. "\n"
+			end
+			textutils.pagedPrint(s)
+		elseif input_lower == "cancel" or input_lower == "quit" then
+			return
+		elseif input_lower == "send" then
+			broadcast_including_self(packet)
+			print("Sent!")
+			return
+		else
+			print("Not a valid command. Type 'help'")
+		end
+	end
+end
+
+function display_commands(command_table)
+	print("Here are the commands:")
+	local s = ""
+	for k,v in pairs(command_table) do
+		s = s .. k .. "\n"
+	end
+	textutils.pagedPrint(s)
+end
+
+function help_command(lower_command, command, rest)
+	display_commands(terminal_commands)
+end
+
+function quit_self_command(lower_command, command, rest)
+	running = false
+	rednet.send(os.getComputerID(), {packet = "quit_network"}, network_prefix)
+end
+
+function quit_network_command(lower_command, command, rest)
+	running = false
+	local packet = {packet = "quit_network"}
+	broadcast_including_self(packet)
+end
+
+function reboot_network_command(lower_command, command, rest)
+	running = false
+	reboot = true
+	local packet = {packet = "reboot_network"}
+	broadcast_including_self(packet)
+end
+
+function search_item_names_command(lower_command, command, rest)
+	local t = search_item_names(rest)
+	local s = ""
+	for i, v in ipairs(t) do
+		s = s .. v .. "\n"
+	end
+	print("Results:")
+	textutils.pagedPrint(s)
+end
+
+function refresh_all_network(lower_command, command, rest)
+	get_master_id_function()
+	broadcast_including_self({packet = "get_default_destinations"})
+	broadcast_including_self({packet = "get_item_display_names"})
+end
+
+function print_all_display_names(lower_command, command, rest)
+	textutils.pagedPrint(textutils.serialise(item_display_names))
+end
+
+function get_master_id_function()
+	broadcast_including_self({packet = "get_master_id"})
+end
+
+function display_knowledge(lower_command, command, rest)
+	print("Master id: " .. master_id)
+end
+
+function broadcast_including_self(packet)
+	rednet.broadcast(packet, network_prefix)
+	rednet.send(os.getComputerID(), packet, network_prefix)
+end
 
 function check_if_replace_prefix()
 	-- if the prefix needs to be replaced this function will do it. This function is called as part of initialization each time
@@ -57,6 +224,29 @@ function steralize_item_table(item_table)
 	return t
 end
 
+function item_key_to_item_table(item_key)
+	local a, b, name, damage = string.find(item_key, "(.+)-(.+)")
+	damage = tonumber(damage)
+	if damage == nil or name == nil then
+		return nil
+	end
+	return {name = name, damage = damage}
+end
+
+function item_name_to_keys(item_name)
+	-- search through all the items with that name and return all the keys I guess?
+	return display_names_to_keys[item_name]
+end
+
+function search_item_names(partial_name)
+	local t = textutils.complete(partial_name, searchable_display_names_to_keys)
+	for i, v in ipairs(t) do
+		t[i] = partial_name .. v
+		t[i] = string.gsub(t[i], "_", " ") -- replace the underscore back out!
+	end
+	return t
+end
+
 function add_item_name(item_table, name)
 	-- item_table = {count = number, name = "minecraft:cobblestone", damage = 0}
 	-- from turtle.getItemDetail()
@@ -66,10 +256,21 @@ function add_item_name(item_table, name)
 		return false -- this will have duplicates when we rename things but we can deal with that fine
 	end
 	item_display_names[t] = name -- add it to the table, then to the file
+	if display_names_to_keys[name] == nil then
+		display_names_to_keys[name] = {}
+		searchable_display_names_to_keys[remove_spaces(name)] = {}
+	end
+	table.insert(display_names_to_keys[name], t)
+	table.insert(searchable_display_names_to_keys[remove_spaces(name)], t)
+
 	local f = fs.open(item_names_path, "a")
 	f.write(item_table.name..","..item_table.damage..","..name.."\n")
 	f.close()
 	return true -- it's a new name!
+end
+
+function remove_spaces(s)
+	return string.gsub(s, " ", "_")
 end
 
 function add_item_default_destination(item_table, destination)
@@ -88,8 +289,12 @@ function add_item_default_destination(item_table, destination)
 end
 
 function add_item_custom_destination(data)
-	local direction = find_direction(destination) -- if it's 'unknown' we don't care about it
+	local direction = find_direction(data.destination) -- if it's 'unknown' we don't care about it
 	if direction == "unknown" then
+		if sorting_computer_type == "storage" then
+			-- terminals and monitors don't need to print that they don't care it's obvious. They may want to make a log of it though...
+			print("Didn't care about custom destination to " .. data.destination)
+		end
 		return false -- don't need to care about it
 	end
 	-- {packet = "set_new_item_custom_destination", data = {items = {LIST_OF_ITEMTABLES_WITH_QUANTITIES}, destination=NEWNAME}}
@@ -98,6 +303,7 @@ function add_item_custom_destination(data)
 
 	-- add it to the list I guess?
 	table.insert(custom_destinations, data)
+	print("Cared about custom destination to " .. data.destination)
 	-- use table.remove() to remove it and decrement the list elements
 	return true -- we need to care about it!
 end
@@ -105,6 +311,8 @@ end
 function load_display_names()
 	-- loads the item display names from the file if it exists
 	item_display_names = {}
+	display_names_to_keys = {}
+	searchable_display_names_to_keys = {}
 	if fs.exists(item_names_path) then
 		local f = fs.open(item_names_path, "r")
 		-- read the lines! They're tab separated
@@ -123,6 +331,12 @@ function load_display_names()
 					local dmg = tonumber(t[2]) or t[2] -- if it's not a number I guess we'll just deal???
 					local item = {name = t[1], damage = dmg}
 					item_display_names[get_item_key(item)] = t[3]
+					if display_names_to_keys[t[3]] == nil then
+						display_names_to_keys[t[3]] = {}
+						searchable_display_names_to_keys[remove_spaces(t[3])] = {}
+					end
+					table.insert(display_names_to_keys[t[3]], get_item_key(item))
+					table.insert(searchable_display_names_to_keys[remove_spaces(t[3])], get_item_key(item))
 				end
 			end
 			line = f.readLine()
@@ -165,6 +379,7 @@ function load_default_destinations()
 end
 
 function input_from_set_of_choices(prompt, choices, force_lowercase)
+	force_lowercase = force_lowercase or false
 	local input = ""
 	while true do
 		print(prompt)
@@ -172,12 +387,12 @@ function input_from_set_of_choices(prompt, choices, force_lowercase)
 		if force_lowercase then
 			input = string.lower(input)
 		end
-		for k, v in choices do
+		for k, v in pairs(choices) do
 			if force_lowercase then
 				v = string.lower(v)
 			end
 			if v == input then
-				break -- return the input!
+				return input
 			end
 		end
 	end
@@ -332,8 +547,12 @@ function initialize_network()
 			break
 		end
 	end
-	if not rednet.open(modem_side) then
-		print("Error opening rednet, this will likely cause errors")
+	if not rednet.isOpen(modem_side) then
+		-- if rednet isn't open, try opening it and then see if that works
+		rednet.open(modem_side)
+		if not rednet.isOpen(modem_side) then
+			print("Error opening rednet, this will likely cause errors")
+		end
 	end
 end
 
@@ -388,6 +607,7 @@ end
 function initialization()
 	-- just holds all the functions that should be called before it initializes
 	load_settings()
+	initialize_terminal_commands()
 	load_sorting_device_action()
 	load_display_names()
 	load_default_destinations()
@@ -407,8 +627,10 @@ function initialization()
 	if sorting_computer_type == "sorter" then
 		-- initialize sorting things!
 		load_sorting_destinations(first_initialization or edit_destinations)
-		drop_all_items_into_origin()
 		find_local_connections()
+		drop_all_items_into_origin()
+	elseif sorting_computer_type == "terminal" then
+		refresh_all_network(1, 2, 3) -- gather all the info from the network please and thanks
 	end
 	-- now it knows where it sorts to.
 	-- now it should tell everyone where it goes and also find out from everyone else where they go from. It now has to initialize everything.
@@ -454,13 +676,18 @@ function receive_rednet_input()
 		elseif message.packet == "get_sorting_network_connections" then
 			-- a new computer has joined the network, tell it what we are connected to!
 			-- tell them who we are!
-			local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), destinations = sorting_destination_settings.destinations}
-			local packet = {packet = "update_network_connection", data = data}
-			rednet.send(sender_id, packet, network_prefix)
+			if sorting_computer_type == "sorter" then
+				-- only sorters respond to this one
+				local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), destinations = sorting_destination_settings.destinations}
+				local packet = {packet = "update_network_connection", data = data}
+				rednet.send(sender_id, packet, network_prefix)
+			end
 		elseif message.packet == "update_network_connection" then
 			connections[message.data.id] = message.data.destinations
-			print("Finding local connections")
-			find_local_connections()
+			if sorting_computer_type == "sorter" then
+				print("Finding local connections")
+				find_local_connections()
+			end
 		elseif message.packet == "get_master_id" then
 			-- if this is the master then it returns this ID
 			if sorting_destination_settings.isMaster then
@@ -470,8 +697,6 @@ function receive_rednet_input()
 			end
 		elseif message.packet == "set_master_id" then
 			master_id = message.data
-		-- elseif message.packet == "" then
-		-- 	-- 
 		elseif message.packet == "get_item_display_names" then
 			if sorting_destination_settings.isMaster then
 				-- give them your list of display names
@@ -480,6 +705,16 @@ function receive_rednet_input()
 			end
 		elseif message.packet == "set_item_display_names" then
 			item_display_names = message.data
+			display_names_to_keys = {}
+			searchable_display_names_to_keys = {}
+			for k, v in pairs(item_display_names) do
+				if display_names_to_keys[v] == nil then
+					display_names_to_keys[v] = {}
+					searchable_display_names_to_keys[remove_spaces(v)] = {}
+				end
+				table.insert(display_names_to_keys[v], k)
+				table.insert(searchable_display_names_to_keys[remove_spaces(v)], k)
+			end
 		elseif message.packet == "set_new_item_display_name" then
 			-- set an individual display name in the master, probably from a pocket computer or a special outside computer monitor idk...
 			if sorting_destination_settings.isMaster then
@@ -579,7 +814,7 @@ function handle_custom_destinations(item_key, count)
 		-- check if that recipie uses the item
 		-- custom = {destination = "dest", items = {ITEMTABLE_Including_quantity, ITEMTABLE_Including_quantity, ITEMTABLE_Including_quantity}}
 		if not custom.delivered then
-			for item_num, item_table in custom.items do
+			for item_num, item_table in ipairs(custom.items) do
 				local possible_item_key = get_item_key(item_table)
 				if possible_item_key == item_key then
 					-- it's a match! We must do something with it! Figure out the item counts necessary and store it somehow...
@@ -588,6 +823,7 @@ function handle_custom_destinations(item_key, count)
 						-- we need to save more!
 						-- transfer it to a storage slot! If we can't do that then we're kinda boned, it's one of the limitations of the system with only suck/drop
 						item_table.already_found = already_found + store_current_item(item_table.count - already_found)
+						print("Stored item for custom destination")
 						-- this works fine even if item_table.already_found is nil, which is perfect
 						already_found = item_table.already_found
 						-- now check if that's all we needed for the item!
@@ -603,6 +839,7 @@ function handle_custom_destinations(item_key, count)
 	-- check for any delivered custom deliveries and remove them
 	for i = #custom_destinations, 1, -1 do
 		if custom_destinations[i].delivered then
+			print("Delivered a custom destination to "..custom_destinations[i].destination)
 			table.remove(custom_destinations, i)
 		end
 	end
@@ -610,7 +847,7 @@ function handle_custom_destinations(item_key, count)
 end
 
 function check_custom_direction_complete(custom)
-	for item_num, item_table in custom.items do
+	for item_num, item_table in ipairs(custom.items) do
 		-- find it and check if count == already_found
 		local found = item_table.already_found or 0
 		if found < item_table.count then
@@ -630,32 +867,34 @@ function drop_custom_direction(custom)
 		print("ERROR WITH CUSTOM DIRECTION UNKNOWN: " .. custom.destination)
 	end
 
-	for item_num, item_table in custom.items do
+	for item_num, item_table in ipairs(custom.items) do
 		-- find it and drop that amount in that direction
 		-- go from 2 to 16 then check 1 as a last chance so that the turtle stays organized. lol that's not going to happen for now...
 		local to_deliver = item_table.count
 		local delivered = 0
 		local item_key = get_item_key(item_table)
 		for i = 1, 16 do
-			local i_item_key = get_item_key(turtle.getItemDetail(i))
-			if i_item_key == item_key then
-				-- keep trying to dump it up to the top until it's all dumped
-				turtle.select(i)
-				local original_count = turtle.getItemCount(i)
-				local current_delivered = 0
-				while not direction_export[direction](to_deliver - delivered- current_delivered) do
-					-- keep trying forever I guess? This can cause problems if the stack size is too large but I hope it'll deal for most cases
-					-- have to re-evaluate how much to push out though
-					current_delivered = original_count - turtle.getItemCount()
-					if current_delivered + delivered >= to_deliver then
-						break -- in the off chance that this failed yet succeeded somehow
+			if turtle.getItemCount(i) > 0 then
+				local i_item_key = get_item_key(turtle.getItemDetail(i))
+				if i_item_key == item_key then
+					-- keep trying to dump it up to the top until it's all dumped
+					turtle.select(i)
+					local original_count = turtle.getItemCount(i)
+					local current_delivered = 0
+					while not direction_export[direction](to_deliver - delivered- current_delivered) do
+						-- keep trying forever I guess? This can cause problems if the stack size is too large but I hope it'll deal for most cases
+						-- have to re-evaluate how much to push out though
+						current_delivered = original_count - turtle.getItemCount()
+						if current_delivered + delivered >= to_deliver then
+							break -- in the off chance that this failed yet succeeded somehow
+						end
 					end
-				end
-				current_delivered = original_count - turtle.getItemCount()
-				delivered = delivered + current_delivered -- update what's been delivered
-				if delivered >= to_deliver then
-					-- break out of the loop so we can deal with the next item!
-					break
+					current_delivered = original_count - turtle.getItemCount()
+					delivered = delivered + current_delivered -- update what's been delivered
+					if delivered >= to_deliver then
+						-- break out of the loop so we can deal with the next item!
+						break
+					end
 				end
 			end
 		end
@@ -675,8 +914,10 @@ function drop_all_items_into_origin()
 	end
 	local direction_export = {up=turtle.dropUp, down=turtle.dropDown, forwards = turtle.drop, unknown=store_unknown_item}
 	for i = 1, 16 do
-		turtle.select(i)
-		direction_export[direction]()
+		if turtle.getItemCount(i) > 0 then
+			turtle.select(i)
+			direction_export[direction]()
+		end
 	end
 	turtle.select(1)
 end
@@ -719,8 +960,9 @@ function load_sorting_device_action()
 	-- who knows? hopefully us...
 	sorting_computer_type = settings.get(settings_prefix.."sorting_purpose", "REPLACE_THIS")
 	if sorting_computer_type == "REPLACE_THIS" then
-		sorting_computer_type = input_from_set_of_choices("Is this a 'sorter', 'display', or 'terminal'?")
+		sorting_computer_type = input_from_set_of_choices("Is this a 'sorter', 'display', or 'terminal'?", {"sorter", "display", "terminal"}, true)
 		settings.set(settings_prefix.."sorting_purpose", sorting_computer_type)
+		save_settings()
 	end
 end
 
@@ -733,7 +975,7 @@ function sort_currently_selected()
 	local sterile_item = steralize_item_table(item)
 	local item_key = get_item_key(item)
 	local destination = "Unknown"
-	local selected = turtle.getSelected()
+	local selected = turtle.getSelectedSlot()
 	handle_custom_destinations(item_key, item_count)
 	turtle.select(selected)
 	if turtle.getItemCount() == 0 then
@@ -837,6 +1079,33 @@ function sort_input()
 	end
 end
 
+function terminal_input()
+	-- this handles computer input from humans! This could probably also be run from sorters since they're all parallel... hmmm...
+	while running do
+		io.write("> ")
+		local human_input = read()
+		local valid_command = false
+		if #human_input > 0 then
+			local c, space, rest = string.match(human_input, "([^ ]+)( *)(.*)")
+			if c ~= nil then
+				local lower_c = string.lower(c)
+				-- print("lower c: "..lower_c)
+				if terminal_commands[lower_c] ~= nil then
+					terminal_commands[lower_c](lower_c, c, rest)
+					valid_command = true
+				-- else
+				-- 	print("ere")
+				-- 	print(terminal_commands)
+				-- 	textutils.pagedPrint(textutils.serialise(terminal_commands))
+				end
+			end
+		end
+		if not valid_command then
+			print("Not a valid command. Type 'help' for help")
+		end
+	end
+end
+
 function deinitialization()
 	shut_down_network()
 end
@@ -855,13 +1124,19 @@ function main_sorter_program()
 	initialization()
 
 	-- run the main program!
-	parallel.waitForAll(receive_rednet_input, sort_input)
+	if sorting_computer_type == "sorter" then
+		parallel.waitForAll(receive_rednet_input, sort_input)
+	elseif sorting_computer_type == "terminal" then
+		parallel.waitForAll(receive_rednet_input, terminal_input)
+	elseif sorting_computer_type == "monitor" then
+		print("Monitors are not yet supported, sorry!")
+	end
 
 	deinitialization() -- I don't know if this will get run so who knows....
 	if reboot then
 		-- restart the computer
 		print("Restarting computer")
-		computer.reboot()
+		os.reboot()
 	else
 		print("Quitting sorting program")
 	end

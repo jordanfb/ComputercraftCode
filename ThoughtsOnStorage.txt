@@ -1,0 +1,167 @@
+This is just a note with my thoughts on storage systems so I don't need to think them again.
+
+I'm limited by the technology of my time.
+
+i.e. my modpack doesn't have openperipherals, so I can't look into chests and get more details about items there. That's limiting
+me to turtles and cycling through the whole chest.
+
+If I had the ability to pluck from the middle of a chest I'd 100% use 4 chest clusters that store caches (or since caches don't seem
+to be destroyable by turtles now I'd use barrels). The turtle would then grab the cache from the chest, place it underneath it,
+get the items out (or put them in) pick up the cache, place an ender chest, stick the items in there (or get them out yada yada)
+then store the cache again.
+
+The problem comes since we can't grab from the middle of the chest. All of a sudden we need to cycle through the entire chest to
+reach things. This is solveable because we can put a chest above the turtle that the turtle will drop caches to as it checks all
+the caches in the storage chest, but that's 2.36 seconds per check. We can improve that time by keeping track of the order of items
+and that way we don't need to check what's in the chest we can just cycle through them, but that's still .8 seconds to skip a
+cache. We can improve further by prioritizing caches based on how often they're accessed. The dumb way to do this would be to
+simply move the most recently accessed chest to the top of the chest. Since sucking/dropping into chests are fifo queues we can
+easily adjust the order. However if the order gets out of wack then we're stuck checking all the barrels again...
+Checking all the slots in a standard chest is ~a minute. Checking all the slots in a diamond chest (12*9 slots) is ~four minutes.
+Prioritization can be improved further by simply tracking how often things are requested/stored and moving the most common items
+to the top of the queue but it still can go wrong, especially on reloading the world.
+
+That's a pretty bad holdup, especially if I don't somehow fix the blocking input system. If another cluster is waiting for this one
+to store things then it's a pretty bad issue and will slow everything down.
+
+That said it doesn't require fuel...
+
+The alternative is an Amazon warehouse type deal with caches/chests placed in the world. We could do a combination where some
+items are stored in chests until they reach a certain number then they're moved to caches, or just keep them in caches since why
+not. We'd still need to cycle through the chests but that's a choice now.
+Movement speeds are pretty speedy at .36 seconds per block. That's more than twice as fast as just sucking and spitting caches,
+even without taking into account having to sort what's where if things go wrong.
+
+The real issue is refueling. We'd need some way to refuel. We'd also need some way to avoid colliding with other turtles.
+I'm pretty sure I wrote one of these programs ages ago but I think I probably lost it on my old hard drive?
+Prioritization is based on how close the turtles are to the ender chests. That can be moved around but it isn't too much.
+
+I can use the GPS api and set up a gps cluster using ender modems that can be used for other things and then it's really simple
+to path and re-orient (it frankly doesn't even need a GPS, that's just handy for restarting without having to align itself
+but that's decently simple too)
+
+Refueling can simply be an infinite lava pool somewhere that the turtle sucks from, or even a bucket filling machine the turtle
+sucks and drops into, which would be nicely self contained. The only power supply would be making lava (the other system
+wouldn't require any).
+
+Material costs the clusters are more expensive, requiring a diamond pick, modem, turtle, and two ender chests per cluster,
+plus whatever chest types we use.
+At their minimum, the warehouse style requires only a refueling station, turtle, modem, and two ender chests per warehouse,
+these could go up to a diamond pick per robot if we wanted to cycle through chests, and possibly ender chests per robot but
+those are optional.
+Those costs are rather different (at the minimum side of the warehouse at least), but neither is terribly much.
+
+Floorspace they're yet again quite different. A regular chest cluster holds 27*4 = 108 item types. A diamond chest cluster holds
+108*4 = 432 item types. Each cluster is 3x3x3 but can be moved close to other clusters (although not quite as close as I thought
+because the barrels stop chests from opening).
+At its worst it's ~4 item types per block if we keep them fully separated, at best it's 16 per block or even 54 or
+61.7142857143 items per block if we require 8 or 7 blocks respectively.
+Really space doesn't really matter though...
+
+In the end it's whatever I want to make.
+I keep leaning towards clusters even though it's really much slower.
+I can have a "deep cluster" with diamond chests that's the slowest for things that really don't need to be used often or
+duplicate caches. Multiple clusters with duplicate caches/barrels is going to be the harder part I think...
+
+Caches can store 20,000 blocks, barrels only 4096. That's 5 times better storage, but again caches can only be in the
+warehouse version since apparently they're unbreakable by turtles.
+
+Also I should handle failing to dig because of unbreakable blocks to prevent the turtle from getting stuck in recursive plus...
+
+Warehouse turtles take 12 items at a time (leaving four spaces 1 bucket, 1 chest in case I want to have chests in the warehouse,
+2 ender chests).
+
+I think clusters will have really slow storage times, since they can't see more than one item in the ender chests they'll
+need to either wait for other clusters to grab their items or we'll need to cycle through them somehow. The stupid way
+to cycle through them would be to have a servo just pull them out of the chest and dump them back in, but that just makes it
+depend on the loop size and now it's all weird and not-programmatic. There's a chance that things would get stuck in the loop
+for ages and it's no longer quite so obviously fifo or filo like most of the sorting system is it's just weird.
+
+An easy improvement to the Amazon warehouse is to have a pipe system that puts all the items away so it's just turtles
+retrieving it, but then the order could possibly change. It would work if we lock the barrels so they can't change, but it's
+less fluid and we can't prioritize as easily.
+
+I could probably adapt the amazon warehouse code to be a cluster (especially if I support chests in the warehouse) but it's
+harder the other way around.
+
+I should also make a terminal turtle that sits above the input ender chest and can be used to create recipies/crafting recipies
+inside it. Honestly it doesn't even need to be by the input I was just thinking that it could dump what you didn't need into
+the system after you were done with it. It would be faster than manually typing out the item names etc. You'd probably need a
+way to enter item percentages for recipies but that's fine.
+
+A way to cycle through input in storage clusters is for them to pull the items into the chest above them, and keep the
+items they want to store, then suck them all back down. That'd be pretty speedy I guess, and we could probably also store
+something like 11 items, while leaving room for two ender chests, a barrel to place etc. and possibly a slot for retrieving
+something at the same time, and a slot for keeping track of the most recent barrel when putting items back away.
+It could run into issues with multiple robots sucking at the same time but I guess I randomize the wait times slightly...
+
+In the end I should really just make whichever's faster for me to program, since I don't actually want to be spending my time
+working on this :P. I'm going to sleep on trying to come up with a different idea for cycling through blocks faster for
+storage clusters and indeed just sleep.
+
+Honestly the cycling idea I already have is probably good enough, but I'm still going to sleep on it.
+
+I also have to figure out how I'm going to deal with crafting and recipies.
+
+What I can do is I can have clusters give estimates of how long it'll take to get the item that master is requesting, then
+master can decide which of multiple clusters to get it from. Basically storage_master will tell each cluster computer
+specifically what they are getting. It's likely every robot for themselves in terms of storage though...
+Wait there's still the problem with this cycling system where if they pull out of the chest but then don't have enough room
+to fill it back in again because items have since filled it then it will get even more deadlocked. I think the solution
+would be to have a master non-cluster which is just a turtle between two ender chests. The master would A) keep track of what
+is input, and B) prevent it from overflowing by only accepting another item when a storage cluster has said it's dealt with a
+stack's worth of input items. That's pretty decent. As another point, we'd know what's placed into the input chest through
+the master, so we'd be able to prime certain clusters to check for stuff they'd store (especially if we know they're the only
+clusters with storage for that item).
+As soon as a cluster has a full cache of an item we should try to create another cache in another cluster to load balance.
+We should probably have all sorts of load balancing things like moving caches between clusters, but that sounds beyond the MVP.
+
+MVP cluster storage:
+Master input turtle figures out what's been added to the input system and deals with requests.
+Master input system keeps track of what items are in which clusters (can be multiple clusters).
+Master input turtle only allows new items into the input chest when a cluster turtle says it stored a stack.
+
+Cluster turtle stores what it can, and retrieves what master tells it to retrieve.
+Items may or may not be in a cache??? (probably for simplicity's sake it should always be in a cache but idk)
+The chests can be whatever size but the cluster turtle should know what size they are for future optimmizations.
+For now just move the last used cache to the front of the line. That'll probably be decent for ores.
+My thought is there are like ~100 items that we use constantly, and those would hopefully be split among the four surrounding
+chests so it's like ~25 items deep max, which is about 20 seconds to get to the deepest one. That's pretty solid.
+That should be ~10 seconds on average which is great.
+We could also deal with extra special cases like cobblestone and wood by having a cluster dedicated to it with a cache as
+one of the four chests? In the end we're limited by the speed of the servos pulling things through the sorting system,
+but we could upgrade that to stack by stack IDK.
+This original version should probably basically path its way through things.
+If it isn't told to get anything then search through the input chest for stuff, pull up to 12 things in. Then start to put things
+away. If at any point it's told to fetch something then check pathing! If it's in the current chest then get it on the way
+in or way out, but otherwise finish all the things in the current chest probably? Really it's just simple pathing :P.
+Also have to be able to figure out what chest they're looking at. Probably the easiest way to check is to pull out the first
+one (or as many as we need to prove it's unique, determined by the lists we have) caches and compare it. (or if it's facing
+a cache/barrel to figure out what it is from that).
+When initializing we should be able to tell which is the most recent cache because it'll be either out on the bottom, or
+in a special slot I guess? Otherwise just spit things back into the chest and then store the special one at the top if we
+have one.
+If we're doing that simple prioritization then we're going to run into trouble if we're storing a lot at once and also
+requesting a lot of different types, since it'll need to store each of the special priority caches as it puts the caches away.
+There'll also be issues if it's taking large numbers > 1 stack out of the cache since it can't have both a cache and the
+output chest, but we can deal with that I guess by alternating between them, but it still needs some extra space :P.
+Cluster turtles remember what they have in at order in what chest.
+Cluster turtles have to be able to scan a chest if it isn't what they remember (or if it's the initial run, in which case it
+won't remember anything).
+Cluster turtles should probably be able to request caches/barrels for items... Maybe the master turtle has access to them?
+That seems overly complicated, instead lets make some overly complicated system where if they have space for them master
+can request one to be crafted or retreived specially to the input chest for the rest of them.
+It'd probably be a good idea to guarantee that only one barrel is in the input chest at once, since otherwise you have to
+check what it is and that's a pain. (obviously if it isn't full of anything then we can have as many of them as we want
+as long as we don't also have ones with items in them).
+
+Here are the times for various actions:
+it seems like it's .36 seconds for movement/turning
+it's 2.36 seconds to suck a barrel out of a chest, place it underneath you, suck in an item from it, check what that item is, drop
+the item down again, pick up the chest and then put the chest away.
+
+It's 1.3 seconds to drop a bucket into a fluid transposer and have it send it back to you filled. That does require power
+though, but I suppose so does the lava generation in the first place.
+
+It's .8 seconds to suck an item, check what it is, then drop it back to a chest.
+checking all the barrels in a standard, 27 slot chest is 2.36*27 = 63.72

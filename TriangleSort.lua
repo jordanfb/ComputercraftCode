@@ -46,8 +46,12 @@ function initialize_terminal_commands()
 		display_knowledge=display_knowledge,
 		print_display_names=print_all_display_names,
 		search_names=search_item_names_command,
-		create_custom_destination=set_custom_destination_command,
+		slow_custom=set_custom_destination_command,
 		}
+end
+
+function add_turtle_terminal_commands()
+	-- add commands to add recipies/custom_destinations here probably? Or just customize other commands idk.
 end
 
 function set_custom_destination_command(lower_command, command, rest)
@@ -65,7 +69,7 @@ function slow_custom_command_entry()
 		io.write("custom direction > ")
 		input = read()
 		input_lower = string.lower(input)
-		if input_lower == "destination" then
+		if input_lower == "destination" or input_lower == "des" then
 			print("Enter destination: ")
 			local destination = read()
 			packet.data.destination = destination
@@ -73,8 +77,13 @@ function slow_custom_command_entry()
 			print("Here is the custom destination")
 			textutils.pagedPrint(textutils.serialise(packet.data))
 		elseif input_lower == "help" or input_lower == "?" then
-			display_commands({help=true, summary=true, additem=true,  searchnames=true, send=true, nametoid=true, removeitem=true,
-							destination=true, cancel=true})
+			local commands = {help=true, summary=true, additem=true,  searchnames=true, send=true, nametoid=true, removeitem=true,
+							addempty=true, destination=true, cancel=true}
+			if get_computer_type() == "turtle" then
+				-- add special commands
+				commands.addcurritem = true
+			end
+			display_commands(commands)
 		elseif input_lower == "additem" then
 			-- get id, get number, add it to the end
 			print("Enter item ID. enter nothing to cancel")
@@ -97,6 +106,29 @@ function slow_custom_command_entry()
 					end
 				else
 					print("Invalid item id")
+				end
+			end
+		elseif input_lower == "addempty" then
+			-- add an empty count!
+			print("NOT IMPLEMENTED")
+		elseif get_computer_type() == "turtle" and input_lower == "addcurritem" then
+			-- add the item that's in the current slot, and ask how much of it
+			if turtle.getItemCount() == 0 then
+				print("No item to add")  -- it's possible you want to add an empty item but idk...
+			else
+				local item_t = turtle.getItemDetail()
+				print("Enter item count, enter nothing to cancel")
+				local count = read()
+				if #count > 0 then
+					count = tonumber(count)
+					if count ~= nil then
+						-- it's a valid number. Add it.
+						item_t.count = count
+						table.insert(packet.data.items, item_t)
+						print("Succeeded in adding item")
+					else
+						print("Invalid number for count")
+					end
 				end
 			end
 		elseif input_lower == "removeitem" then
@@ -631,6 +663,11 @@ function initialization()
 		drop_all_items_into_origin()
 	elseif sorting_computer_type == "terminal" then
 		refresh_all_network(1, 2, 3) -- gather all the info from the network please and thanks
+		-- check what type of computer this is. If it's a turtle add the commands to add recipies/directions with items in the
+		-- inventory.
+		if get_computer_type() == "turtle" then
+			add_turtle_terminal_commands()
+		end
 	end
 	-- now it knows where it sorts to.
 	-- now it should tell everyone where it goes and also find out from everyone else where they go from. It now has to initialize everything.
@@ -1110,7 +1147,7 @@ function deinitialization()
 	shut_down_network()
 end
 
-function main_sorter_program()
+function main()
 	if tArgs[1] == "reset" then
 		-- reset your settings by deleting the settings file
 		fs.delete(settings_path)
@@ -1143,4 +1180,4 @@ function main_sorter_program()
 end
 
 
-main_sorter_program()
+main()

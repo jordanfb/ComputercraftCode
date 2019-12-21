@@ -1,3 +1,14 @@
+--[[
+todo:
+-make it review the unknown items each time it gets more connections! The reason why they're unknown is because it hasn't found the way to deliver
+them, so we need to let that happen!
+-refactor the code so the networking stuff that's needed for the storage side of things can be used there.
+-save and load custom destinations? that's probably a good idea.
+-crafting somehow
+-storage clusters.
+]]
+
+
 local tArgs = {...}
 
 settings_path = "sorting_network_settings.txt"
@@ -78,7 +89,7 @@ function slow_custom_command_entry()
 			textutils.pagedPrint(textutils.serialise(packet.data))
 		elseif input_lower == "help" or input_lower == "?" then
 			local commands = {help=true, summary=true, additem=true,  searchnames=true, send=true, nametoid=true, removeitem=true,
-							addempty=true, destination=true, cancel=true}
+							addempty=true, destination=true, cancel=true, repeatitem=true}
 			if get_computer_type() == "turtle" then
 				-- add special commands
 				commands.addcurritem = true
@@ -107,6 +118,15 @@ function slow_custom_command_entry()
 				else
 					print("Invalid item id")
 				end
+			end
+		elseif input_lower == "repeatitem" then
+			-- repeat the last item in the direction
+			if #packet.data.items > 0 then
+				local last = packet.data.items[#packet.data.items]
+				local item_t = {name = last.name, count = last.count, damage = last.damage}
+				table.insert(packet.data.items, item_t)
+			else
+				print("No item to repeat")
 			end
 		elseif input_lower == "addempty" then
 			-- add an empty count!
@@ -532,27 +552,27 @@ function save_settings()
 	settings.save(settings_path)
 end
 
-function initialize_known_destinations()
-	-- get them from settings if they exist
-	known_destinations = settings.get(settings_prefix .. "known_destinations", known_destinations)
-	known_destinations[""..os.getComputerID()] = true -- it knows that it exists!
-end
+-- function initialize_known_destinations()
+-- 	-- get them from settings if they exist
+-- 	known_destinations = settings.get(settings_prefix .. "known_destinations", known_destinations)
+-- 	known_destinations[""..os.getComputerID()] = true -- it knows that it exists!
+-- end
 
-function add_destination(destination, direction)
-	-- add a known destination, if direction is not nil then it knows it can send things to that destination that direction
-	if is_known_destination(destination) then
-		return -- already known so exit early
-	end
-	known_destinations[destination] = true
-	if direction ~= nil then
-		-- it can be reached by this sorter!
-		sorting_destination_settings[destination] = direction
-	end
-end
+-- function add_destination(destination, direction)
+-- 	-- add a known destination, if direction is not nil then it knows it can send things to that destination that direction
+-- 	if is_known_destination(destination) then
+-- 		return -- already known so exit early
+-- 	end
+-- 	known_destinations[destination] = true
+-- 	if direction ~= nil then
+-- 		-- it can be reached by this sorter!
+-- 		sorting_destination_settings[destination] = direction
+-- 	end
+-- end
 
-function is_known_destination(destination)
-	return known_destinations[destination] ~= nil
-end
+-- function is_known_destination(destination)
+-- 	return known_destinations[destination] ~= nil
+-- end
 
 function add_sorting_direction(destination, direction)
 	-- this is just a helper function to add a sorting direction
@@ -918,7 +938,7 @@ function drop_custom_direction(custom)
 					turtle.select(i)
 					local original_count = turtle.getItemCount(i)
 					local current_delivered = 0
-					while not direction_export[direction](to_deliver - delivered- current_delivered) do
+					while not direction_export[direction](math.min(64, to_deliver - delivered- current_delivered)) do
 						-- keep trying forever I guess? This can cause problems if the stack size is too large but I hope it'll deal for most cases
 						-- have to re-evaluate how much to push out though
 						current_delivered = original_count - turtle.getItemCount()

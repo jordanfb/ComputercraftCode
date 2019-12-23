@@ -1,7 +1,4 @@
 
-
-
-
 function display_commands(command_table)
 	print("Here are the commands:")
 	local s = ""

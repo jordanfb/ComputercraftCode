@@ -6,6 +6,8 @@ them, so we need to let that happen!
 -save and load custom destinations? that's probably a good idea.
 -crafting somehow
 -storage clusters.
+-storage warehouses
+-storage master turtle that keeps track of everything
 ]]
 
 

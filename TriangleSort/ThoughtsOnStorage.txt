@@ -165,3 +165,16 @@ though, but I suppose so does the lava generation in the first place.
 
 It's .8 seconds to suck an item, check what it is, then drop it back to a chest.
 checking all the barrels in a standard, 27 slot chest is 2.36*27 = 63.72
+
+
+
+
+-- Now, during winter break more thoughts:
+I just want a fast and dirty sorting system that can retrieve items and process them...
+I kinda feel like the Amazon warehouse one is faster to program but that may be incorrect? I'm really not sure, it requires zeroing position and refueling.
+The cluster doesn't require movement which is one good thing, but it does require saving positions of items which we'd have to do anyways... hmmm.
+Maybe that's the strategy, although it's less cool looking I think? The amazon warehouse one could be made easier by having pipes distribute the items so it's only fetching items. If it's only one layer then it's pretty easy to zero itself, although that's pretty easy anyways, just go forwards and turn until you find the hole then go up. We'd have difficulties with unstackable things but that's survivable, we can just store them in a bunch of diamond chests and manually fetch them if needed, or do a weird round robin sorting system for the special items if really necessary. In the end we should have storage go into a master storage tracker which keeps track of input and then it all goes past a master storage system that keeps track of output and then it's all set. They could possibly be the same turtle but then it would need to rotate which slows it down a lot.
+
+I think the coolest would be the amazon warehouse with a bunch of caches, then we can lock the caches so they never run dry which is good. We know the order the pipes prioritize them in so we know where the items are and then we can be happy enough. Honestly I think we'll always have to assume that there are empty caches in the warehouse, and maybe have to deal with being able to upgrade certain caches? I'm not sure the best way to upgrade except manually saying we've upgraded a cache.
+
+How will refueling work? We can use the lava bucket method and always generate lava for it, that's probably the best route, because then we don't have to worry about keeping coal or wood or whatever.

@@ -41,6 +41,7 @@ local avoidList = { -- a list of the blocks the turtle shouldn't mine.
   {"minecraft:stone", 3},
   {"minecraft:stone", 5}, -- andesite
   {"minecraft:lava", -1},
+  {"minecraft:flowing_lava", -1},
   {"chisel:basalt2", -1},
 }
 

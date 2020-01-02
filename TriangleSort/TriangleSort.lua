@@ -54,6 +54,8 @@ terminal_commands = {}
 
 function initialize_terminal_commands()
 	terminal_commands = {help=help_command,
+		update_all=update_network_command,
+		update=update_self_command,
 		quit=quit_self_command,
 		quit_all=quit_network_command,
 		reboot_all=reboot_network_command,
@@ -63,6 +65,7 @@ function initialize_terminal_commands()
 		print_display_names=print_all_display_names,
 		search_names=search_item_names_command,
 		slow_custom=set_custom_destination_command,
+		sort_unknown_items=sort_unknown_items_command,
 		}
 end
 
@@ -220,6 +223,20 @@ function reboot_network_command(lower_command, command, rest)
 	running = false
 	reboot = true
 	local packet = {packet = "reboot_network"}
+	broadcast_including_self(packet)
+end
+
+function update_self_command(lower_command, command, rest)
+	rednet.send(os.getComputerID(), {packet = "update_network"}, network_prefix)
+end
+
+function update_network_command(lower_command, command, rest)
+	local packet = {packet = "update_network"}
+	broadcast_including_self(packet)
+end
+
+function sort_unknown_items_command(lower_command, command, rest)
+	local packet = {packet = "sort_unknown_items"}
 	broadcast_including_self(packet)
 end
 

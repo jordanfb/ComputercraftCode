@@ -248,7 +248,7 @@ function get_master_id_function()
 end
 
 function display_knowledge(lower_command, command, rest)
-	print("Master id: " .. master_id)
+	print("Master id: " .. master_id)1q
 	print("Number of display names: " .. count_display_names())
 end
 
@@ -740,6 +740,23 @@ function receive_rednet_input()
 			running = false
 			reboot = true
 			break
+		elseif message.packet == "update_network" then
+			-- update from github!
+			shell.run("github clone jordanfb/ComputercraftCode")
+			-- copy the startup file into the main place
+			shell.run("copy jordanfb/ComputercraftCode/TriangleSort/sortingstartup.lua /startup.lua")
+			-- then reboot
+			running = false
+			reboot = true
+			break
+		elseif message.packet == "sort_unknown_items" then
+			-- tell the main sorter to sort the unknown items!
+			if sorting_computer_type == "sorter" and sorting_destination_settings.isMaster then
+				-- we should also make a remote version of this which sends the information to a PDA but that's not worth it atm.
+				-- now since we're the master sorter we know where Unknown goes? Perhaps we should instead just check if our destinations include Unknown
+				print("Reviewing items. Please do not leave until this is finished or the system will get stuck")
+				player_review_items = true -- tell us to review items now! This will pause everything so hopefully people are smarter than that :P
+			end
 		elseif message.packet == "quit_network" then
 			-- quit this loop
 			running = false

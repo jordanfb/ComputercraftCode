@@ -2,12 +2,15 @@
 todo:
 -make it review the unknown items each time it gets more connections! The reason why they're unknown is because it hasn't found the way to deliver
 them, so we need to let that happen!
+-add a network call to review the unlisted items via a command sent from another terminal so that I don't have to restart the master turtle with the argument
 -refactor the code so the networking stuff that's needed for the storage side of things can be used there.
 -save and load custom destinations? that's probably a good idea.
 -crafting somehow
 -storage clusters.
 -storage warehouses
 -storage master turtle that keeps track of everything
+-convert all rednet into messages that include sender ids and reciever ids so it's compatible with rednet resenders. They also may need to store a table
+of messages they've responded to to avoid responding multiple times.
 ]]
 
 
@@ -236,7 +239,7 @@ function refresh_all_network(lower_command, command, rest)
 	broadcast_including_self({packet = "get_item_display_names"})
 end
 
-function print_all_display_names(lower_command, command, rest)
+function print_all_display_names(lower_commanprindid, command, rest)
 	textutils.pagedPrint(textutils.serialise(item_display_names))
 end
 
@@ -246,6 +249,16 @@ end
 
 function display_knowledge(lower_command, command, rest)
 	print("Master id: " .. master_id)
+	print("Number of display names: " .. count_display_names())
+end
+
+function count_display_names()
+	-- simply counts and returns the number of display names to get an idea the size of the info tables
+	local size = 0
+	for k, v in pairs(item_display_names) do
+		size = size + 1
+	end
+	return size
 end
 
 function broadcast_including_self(packet)
@@ -732,6 +745,19 @@ function receive_rednet_input()
 			running = false
 			reboot = false
 			break
+		elseif message.packet == "get_custom_destinations" then
+			-- tell them what your custom destinations are!
+			if sorting_computer_type == "sorter" then
+				-- only sorters respond to this one
+				local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), destinations = custom_destinations}
+				local packet = {packet = "return_custom_destinations", data = data}
+				rednet.send(sender_id, packet, network_prefix)
+			end
+		elseif message.packet == "return_custom_destinations" then
+			-- someone has told us what their destinations are!
+			if sorting_computer_type == "display" then
+				-- if we're a custom_destination display then update stuff!
+			end
 		elseif message.packet == "get_sorting_network_connections" then
 			-- a new computer has joined the network, tell it what we are connected to!
 			-- tell them who we are!
@@ -1129,7 +1155,7 @@ function sort_input()
 			end
 			-- sleep(5)
 			-- coroutine.yield()
-			sleep(1)
+			-- sleep(1)
 		end
 		if sleepNow then
 			-- print("sleeping")
@@ -1187,8 +1213,8 @@ function main()
 		parallel.waitForAll(receive_rednet_input, sort_input)
 	elseif sorting_computer_type == "terminal" then
 		parallel.waitForAll(receive_rednet_input, terminal_input)
-	elseif sorting_computer_type == "monitor" then
-		print("Monitors are not yet supported, sorry!")
+	elseif sorting_computer_type == "display" then
+		print("Monitors/displays are not yet supported, sorry!")
 	end
 
 	deinitialization() -- I don't know if this will get run so who knows....

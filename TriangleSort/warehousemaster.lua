@@ -149,7 +149,7 @@ function convert_pipe_to_index(pipe_number)
 		modded = modded - fake_caches_per_level -- this is ugly but I don't want to think about mods and off by one errors at the moment
 	end
 	local cache_width = 0
-	if ((modded-1) % (width * 2)) <= width then
+	if ((modded-1) % (width * 2)) < width then
 		-- then it's on the first half of the pipe which goes +x
 		cache_width = ((modded-1)%width) + 1
 	else
@@ -157,7 +157,7 @@ function convert_pipe_to_index(pipe_number)
 		cache_width = width - (((modded-1)%width))
 	end
 	local cache_height = 1 -- for now we know it's on the first level FIX
-	local cache_depth = math.floor(modded/width)
+	local cache_depth = math.floor((modded-1)/width)
 
 	-- now we know the coordinates, so we can convert that to index
 	return cache_depth * width    +    (cache_height-1) * fake_caches_per_level    +    cache_width

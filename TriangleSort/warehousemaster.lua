@@ -193,16 +193,18 @@ function WhereWillItemsEndUp(item, count)
 			local cache_index = convert_pipe_to_index(i)
 			-- can it fit there? if so, how much?
 			local stored = how_much_stored_here(cache_index, item, amount_left)
-			stored_locations[#stored_locations + 1] = {cache_index = cache_index, count = stored}
-			amount_left = amount_left - stored
-			if amount_left == 0 then
-				-- we've stored it all!
-				break
+			if (stored > 0) then
+				stored_locations[#stored_locations + 1] = {cache_index = cache_index, count = stored}
+				amount_left = amount_left - stored
+				if amount_left == 0 then
+					-- we've stored it all!
+					break
+				end
 			end
 		end
 	end
 	if amount_left > 0 then
-		print("MORE LEFT OH NO FIX") -- FIX this please
+		print("MORE LEFT OH NO FIX ERROR") -- FIX this please
 	end
 	return stored_locations
 end
@@ -233,6 +235,7 @@ function add_item_to_storage(item_key, item_count)
 		end
 		itemsStoredBySlot[v.cache_index].item = item_key
 		itemsStoredBySlot[v.cache_index].count = itemsStoredBySlot[v.cache_index].count + v.count
+		print("item: " ..item_key .. " added to cache " .. v.cache_index .. " with count " .. itemsStoredBySlot[v.cache_index].count)
 	end
 end
 

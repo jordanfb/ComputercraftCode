@@ -173,6 +173,7 @@ function how_much_stored_here(cache_index, item, count)
 		itemsStoredBySlot[cache_index].max = cache_sizes[1]
 		itemsStoredBySlot[cache_index].count = 0
 		itemsStoredBySlot[cache_index].item = ""
+		item_in_slot = itemsStoredBySlot[cache_index]
 	end
 	if item_in_slot.item == nil or item_in_slot.item == "" or item_in_slot.item == item then
 		-- figure out how much can be stored here and return that

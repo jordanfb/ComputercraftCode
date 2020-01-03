@@ -246,6 +246,7 @@ function sort_current()
 
 	-- if it's in the system somewhere then add it to this
 	add_item_to_storage(item_key, item_count)
+	turtle.dropUp()
 	return true
 end
 

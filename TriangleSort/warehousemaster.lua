@@ -151,10 +151,10 @@ function convert_pipe_to_index(pipe_number)
 	local cache_width = 0
 	if ((modded-1) % (width * 2)) < width then
 		-- then it's on the first half of the pipe which goes +x
-		cache_width = (modded-1)(%width) + 1
+		cache_width = ((modded-1)%width) + 1
 	else
 		-- it's on the second half of the pipe that goes -x
-		cache_width = width - ((modded-1)(%width) + 1)
+		cache_width = width - (((modded-1)%width) + 1)
 	end
 	local cache_height = 1 -- for now we know it's on the first level FIX
 	local cache_depth = math.floor(modded/width)

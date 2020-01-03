@@ -144,7 +144,7 @@ function is_real_cache(cache_num)
 end
 
 function convert_pipe_to_index(pipe_number)
-	local modded = cache_num
+	local modded = pipe_number
 	while modded > fake_caches_per_level do
 		modded = modded - fake_caches_per_level -- this is ugly but I don't want to think about mods and off by one errors at the moment
 	end

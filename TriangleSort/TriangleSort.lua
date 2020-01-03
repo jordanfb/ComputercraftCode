@@ -2,7 +2,6 @@
 todo:
 -make it review the unknown items each time it gets more connections! The reason why they're unknown is because it hasn't found the way to deliver
 them, so we need to let that happen!
--add a network call to review the unlisted items via a command sent from another terminal so that I don't have to restart the master turtle with the argument
 -refactor the code so the networking stuff that's needed for the storage side of things can be used there.
 -save and load custom destinations? that's probably a good idea.
 -crafting somehow
@@ -11,7 +10,26 @@ them, so we need to let that happen!
 -storage master turtle that keeps track of everything
 -convert all rednet into messages that include sender ids and reciever ids so it's compatible with rednet resenders. They also may need to store a table
 of messages they've responded to to avoid responding multiple times.
-]]
+
+-Processing Improvements:
+	- Save recipies with the number and type of item output and allow players to chose them
+		- this should be saved on the master and sent over network to everyone
+	- Create a "machine monitor" which watches over a machine like the induction smelter or alloy smelter or crafting turtle to only send a single custom recipie until it gets a redstone signal after which it can send the next one
+		- this also requires checking that furnaces etc. will send a redstone signal using a comparator when they have any item still being made, which I can then invert.
+			- save the status of them? maybe not that's effort, but I should also just save everything so maybe at some point I can fix that
+	- figure out if there's a better way to determine which computer has access to the Unknown chest not just the master. Maybe it's down the line? I'm not sure, not a priority
+	- make a crafting turtle using the custom destinations! It's basically ready! If we have a monitor then we know that every item that goes into it is ready!
+
+
+- Displays
+	- return_custom_destinations and get_custom_destinations needs to be called by displays and actually displayed
+	- storage displays when we have that working
+
+- Faster custom recipie additions
+	- include a turtle that can add an item that gets passed in? probably.
+		- I could also make it add everything in the shape of a crafting turtle so it knows what has to be empty etc. that works fine for even machines with fewer ports because it only cares about leading empty spaces
+
+]]--
 
 
 local tArgs = {...}
@@ -791,6 +809,7 @@ function receive_rednet_input()
 			-- someone has told us what their destinations are!
 			if sorting_computer_type == "display" then
 				-- if we're a custom_destination display then update stuff!
+				print("Not handled yet!")
 			end
 		elseif message.packet == "get_sorting_network_connections" then
 			-- a new computer has joined the network, tell it what we are connected to!

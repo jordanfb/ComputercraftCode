@@ -186,7 +186,7 @@ function WhereWillItemsEndUp(item, count)
 	-- figure out where this item will end up
 	local amount_left = count
 	local stored_locations = {}
-	for i in 1, #num_fake_caches do
+	for i in 1, num_fake_caches do
 		-- if it's a real cache, check if we can store in it
 		if is_real_cache(i) then
 			local cache_index = convert_pipe_to_index(i)

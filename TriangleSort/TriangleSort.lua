@@ -7,6 +7,9 @@ them, so we need to let that happen!
 -crafting somehow
 -storage clusters.
 -storage warehouses
+	- warehouse master
+	- fetching robots
+	- junk watcher to stop storing unstackable items etc. I need to also figure out which items are stackable and which aren't, which probably means asking if it's stackable when you import it the first time and maybe temporarily making a function to just review all the items we already know.
 -storage master turtle that keeps track of everything
 -convert all rednet into messages that include sender ids and reciever ids so it's compatible with rednet resenders. They also may need to store a table
 of messages they've responded to to avoid responding multiple times.
@@ -16,6 +19,7 @@ of messages they've responded to to avoid responding multiple times.
 		- this should be saved on the master and sent over network to everyone
 	- Create a "machine monitor" which watches over a machine like the induction smelter or alloy smelter or crafting turtle to only send a single custom recipie until it gets a redstone signal after which it can send the next one
 		- this also requires checking that furnaces etc. will send a redstone signal using a comparator when they have any item still being made, which I can then invert.
+			- they do! so that's solid we can use that. It lit up even with a single item in it.
 			- save the status of them? maybe not that's effort, but I should also just save everything so maybe at some point I can fix that
 	- figure out if there's a better way to determine which computer has access to the Unknown chest not just the master. Maybe it's down the line? I'm not sure, not a priority
 	- make a crafting turtle using the custom destinations! It's basically ready! If we have a monitor then we know that every item that goes into it is ready!

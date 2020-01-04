@@ -12,7 +12,8 @@ so we can store it then remove it. But we still don't want things like used shov
 retrieve items from a 2d plane when requested
 retrieval bots refuel when needed
 also need to figure out what to do if something goes wrong and the items aren't where you expect them, but maybe we'll just accept that for now
-rednet connection to other computers and ability to send what we have in storage
+DONE: rednet connection to other computers and ability to send what we have in storage
+rednet request items fetched
 
 we're going to have some difficulty with retrieval when we're removing items too unless we make a point to not remove the last item, which is legitimate and
 probably the simplest option, because otherwise it's a race condition between the fetching robots and the pipes.

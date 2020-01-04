@@ -46,6 +46,11 @@ network_prefix = "REPLACE_THIS"
 sorting_destination_settings = {destinations = {}} -- is a map from destination=direction
 known_destinations = {Player=true, Unknown=true, Storage=true} -- the default locations
 
+-- STORAGE NODES AND ITEMS STORED
+storage_nodes = {} -- connected storage nodes
+items_stored = {}
+
+-- SORTING CONNECTIONS
 connections = {} -- this is the graph of the network I guess?
 local_connections = {}
 local_directions = {} -- the inverse of local_connections, it's destination="up", destination="forwards", etc.
@@ -84,6 +89,7 @@ function initialize_terminal_commands()
 		search_names=search_item_names_command,
 		slow_custom=set_custom_destination_command,
 		sort_unknown_items=sort_unknown_items_command,
+		all_items_stored=slow_print_display_name_item_count_command,
 		}
 end
 
@@ -272,6 +278,32 @@ function refresh_all_network(lower_command, command, rest)
 	get_master_id_function()
 	broadcast_including_self({packet = "get_default_destinations"})
 	broadcast_including_self({packet = "get_item_display_names"})
+
+	-- refresh storage things
+	request_storage_masters()
+	request_stored_items()
+end
+
+function slow_print_display_name_item_count_command(lower_command, command, rest)
+	-- loop through the item list printing out how many of each item we have in each storage system.
+	-- I should also support multiple storage systems and collect all the items but for now... no. I refuse to fall prey to that :P
+	paged_print_all_stored_items()
+end
+
+function print_all_stored_items(wait)
+	-- FIX
+	for k, v in pairs(items_stored) do
+		print("" .. k .. ": " .. v.count)
+		sleep(wait)
+	end
+end
+
+function paged_print_all_stored_items()
+	local output = ""
+	for k, v in pairs(items_stored) do
+		output = output .. k .. ": " .. v.count .. "\n"
+	end
+	textutils.pagedPrint(output)
 end
 
 function print_all_display_names(lower_commanprindid, command, rest)
@@ -283,7 +315,7 @@ function get_master_id_function()
 end
 
 function display_knowledge(lower_command, command, rest)
-	print("Master id: " .. master_id)1q
+	print("Master id: " .. master_id)
 	print("Number of display names: " .. count_display_names())
 end
 
@@ -551,6 +583,7 @@ function load_sorting_destinations(edit)
 	if edit then
 		-- edit them!
 		local master = read_non_empty_string("Enter 'y' if this is the top of the sorting tree:") == "y"
+		local update_startup = read_non_empty_string("Enter 'y' if this should initialize the startup on update:") == "y"
 		print("Enter the destinations for the following directions, at least one of which should be 'origin' which means it's the origin of items to this sorter")
 		print("-1 for no connection")
 		local up = read_non_empty_string("Enter Up destination:")
@@ -572,6 +605,9 @@ function load_sorting_destinations(edit)
 		sorting_destination_settings.destinations.forwards = forwards
 
 		sorting_destination_settings.isMaster = master
+
+		-- update startup
+		sorting_destination_settings.initialize_startup_on_update = update_startup
 
 		settings.set(settings_prefix .. "sorting_settings", sorting_destination_settings)
 		save_settings()
@@ -765,6 +801,34 @@ function has_display_name(item_table)
 	return item_display_names[k] ~= nil
 end
 
+function request_stored_items()
+	-- ask all the storage_masters you know to send you their contents
+	packet = {packet = "get_stored_items"}
+	rednet.broadcast(packet, network_prefix) -- request other connections in the network. Theoretically I should directly send to each of the masters rather than broadcast it but...
+end
+
+function request_storage_masters()
+	-- send a message to all the storagemasters requesting that they reveal themselves
+	packet = {packet = "get_storage_nodes"}
+	rednet.broadcast(packet, network_prefix) -- request other connections in the network
+end
+
+function UpdateStorageCount()
+	-- update the master count of items
+	items_stored = {}
+	for rednet_id, node in pairs(storage_nodes) do
+		-- item data:
+		for item, storage_data in pairs(node.items) do
+			-- add the item to our master list!
+			if items_stored[item] == nil then
+				items_stored[item] = {count = 0, locations = {}}
+			end
+			items_stored[item].count = items_stored[item].count + storage_data.count
+			-- also add the locations but not at the moment because I don't care about that at the moment FIX THIS
+		end
+	end
+end
+
 function receive_rednet_input()
 	-- this function is used by the parallel api to manage the rednet side of things
 	while running do
@@ -779,7 +843,10 @@ function receive_rednet_input()
 			-- update from github!
 			shell.run("github clone jordanfb/ComputercraftCode")
 			-- copy the startup file into the main place
-			shell.run("copy jordanfb/ComputercraftCode/TriangleSort/sortingstartup.lua /startup.lua")
+			if (settings.get(settings_prefix .. "initialize_startup_on_update", true)) then
+				print("Copying startup file to startup.lua, can be disabled in settings")
+				shell.run("copy jordanfb/ComputercraftCode/TriangleSort/sortingstartup.lua /startup.lua")
+			end
 			-- then reboot
 			running = false
 			reboot = true
@@ -826,6 +893,21 @@ function receive_rednet_input()
 				print("Finding local connections")
 				find_local_connections()
 			end
+		elseif message.packet == "add_storage_node" then
+			-- add the storage node to the master's list of storage nodes!
+			-- local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
+			if storage_nodes[message.data.rednet_id] == nil then
+				storage_nodes[message.data.rednet_id] = message.data
+			else
+				-- otherwise just update what we know about it? This may not be necessary
+				storage_nodes[message.data.rednet_id].label = message.data.label
+				storage_nodes[message.data.rednet_id].id = message.data.id
+			end
+		elseif message.packet == "send_stored_items" then
+			-- add the items stored to the lists
+			-- data = {items = get_items_count_table(), id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
+			storage_nodes[message.data.rednet_id] = message.data -- it has the items!
+			UpdateStorageCount()
 		elseif message.packet == "get_master_id" then
 			-- if this is the master then it returns this ID
 			if sorting_destination_settings.isMaster then

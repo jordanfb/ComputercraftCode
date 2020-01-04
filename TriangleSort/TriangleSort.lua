@@ -907,6 +907,9 @@ function receive_rednet_input()
 			-- add the items stored to the lists
 			-- data = {items = get_items_count_table(), id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
 			storage_nodes[message.data.rednet_id] = message.data -- it has the items!
+			if sorting_computer_type == "display" then
+				print("Got items sent to me!")
+			end
 			UpdateStorageCount()
 		elseif message.packet == "get_master_id" then
 			-- if this is the master then it returns this ID
@@ -1370,6 +1373,7 @@ function display_display()
 				-- now at least it's not going to change it when looping over it hopefully...
 				i = 0
 				request_stored_items()
+				print("Requested item update")
 				sleep(1) -- give it time to respond I guess? Hopefully that will be enough
 			end
 		end

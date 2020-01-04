@@ -1345,6 +1345,15 @@ function terminal_input()
 	end
 end
 
+function getFirstPeripheralSide(peripheral_type)
+	for i, v in ipairs(peripheral.getNames()) do
+		if peripheral.getType(v) == peripheral_type then
+			return v
+		end
+	end
+	return ""
+end
+
 function display_display()
 	-- display whatever you're set to display!
 	-- display_type could be "itemscroll" or other things that aren't implemented yet!
@@ -1353,7 +1362,7 @@ function display_display()
 
 	refresh_all_network() -- so that we get display names and stored items etc.
 	if display_type == "itemscroll" then
-		local m = peripheral.wrap("top") -- FIX only allowing the top of a computer, should be set in settings and also allow multiple different displays
+		local m = peripheral.wrap(getFirstPeripheralSide("monitor"))
 		local width, height = m.getSize()
 		local i = 60
 		while running do

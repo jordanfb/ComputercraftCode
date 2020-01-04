@@ -1417,6 +1417,7 @@ function display_display()
 				-- print("Displaying item stored")
 				m.scroll(1)
 				m.setCursorPos(1, height)
+				print("Results: " ..display_name .. " and " .. item_key)
 				-- m.write(get_display_from_key(k) .. ": " .. v.count) -- print the line on the monitor, then live life happily!
 				m.write(display_name .. ": " .. items_stored[item_key].count) -- print the line on the monitor, then live life happily!
 				i = i + 1

@@ -392,13 +392,32 @@ function initialize_network()
 	end
 end
 
+function shut_down_network()
+	rednet.close(modem_side)
+	print("Shut down Rednet network")
+end
 
-function main()
-	-- main loop
-	parallel.waitForAll(receive_rednet_input, sort_input)
+function deinitialization()
+	shut_down_network()
 end
 
 
+function main()
+	initialize()
 
-initialize()
+	-- main loop
+	parallel.waitForAll(receive_rednet_input, sort_input)
+
+
+	deinitialization() -- I don't know if this will get run so who knows....
+	if reboot then
+		-- restart the computer
+		print("Restarting computer")
+		os.reboot()
+	else
+		print("Quitting sorting program")
+	end
+end
+
+
 main()

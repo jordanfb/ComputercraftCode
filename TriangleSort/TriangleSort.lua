@@ -1362,7 +1362,14 @@ function display_display()
 
 	refresh_all_network() -- so that we get display names and stored items etc.
 	if display_type == "itemscroll" then
-		local m = peripheral.wrap(getFirstPeripheralSide("monitor"))
+		local monitor_side = getFirstPeripheralSide("monitor")
+		if monitor_side == "" then
+			print("Monitor not found. Exiting")
+			running = false
+			return
+		end
+		print("Monitor found on side " .. monitor_side)
+		local m = peripheral.wrap(monitor_side)
 		local width, height = m.getSize()
 		local i = 60
 		while running do

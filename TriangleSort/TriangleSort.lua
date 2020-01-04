@@ -1351,6 +1351,7 @@ function display_display()
 		local i = 0
 		while running do
 			for k, v in pairs(items_stored) do
+				print("Displaying item stored")
 				m.scroll(1)
 				m.setCursorPos(1, height)
 				m.write(get_display_from_key(k) .. ": " .. v.count) -- print the line on the monitor, then live life happily!
@@ -1360,7 +1361,10 @@ function display_display()
 				end
 				sleep(1)
 			end
+			print("Done displaying items stored")
+			i = i + 1
 			m.scroll(1) -- to show we've made it to the end
+			sleep(1)
 			if i > 60 then
 				-- every minute request an update on the item list! Is this a good idea? I'm not sure...
 				-- now at least it's not going to change it when looping over it hopefully...

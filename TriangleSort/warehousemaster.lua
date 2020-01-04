@@ -141,7 +141,7 @@ function BuildItemsStoredToSlotTable()
 			itemsStored[v.item] = {count = 0, location = {}}
 		end
 		-- now add the item stored to the table
-		itemsStored[v.item].count += v.count
+		itemsStored[v.item].count = itemsStored[v.item].count + v.count
 		itemsStored[v.item].locations[#itemsStored[v.item].locations + 1] = {index = i, max = v.max, count = v.count}
 	end
 	return itemsStored

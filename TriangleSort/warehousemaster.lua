@@ -285,7 +285,7 @@ function receive_rednet_input()
 			-- update from github!
 			shell.run("github clone jordanfb/ComputercraftCode")
 			-- copy the startup file into the main place
-			shell.run("copy jordanfb/ComputercraftCode/TriangleSort/warehousemasterstartup.lua /startup.lua")
+			shell.run("copy ComputercraftCode/TriangleSort/warehousemasterstartup.lua /startup.lua")
 			-- then reboot
 			running = false
 			reboot = true

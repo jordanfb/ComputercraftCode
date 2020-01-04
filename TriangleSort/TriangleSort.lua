@@ -788,8 +788,17 @@ function get_display_name(item_table)
 end
 
 function get_display_from_key(item_key)
-	print("Trying to get display name got "..item_display_names[k])
+	print("Trying to get display name from ".. k .. " length " .. #item_key)
 	return item_display_names[k] or item_key -- if it doesn't know the name then return the default item name
+end
+
+function test_display_names()
+	print("Testing display names. Press keys to move forwards")
+	for k, v in pairs(item_display_names) do
+		print(k .. " : " .. v)
+		print(#k)
+		os.pullEvent("key") -- wait for them to press enter
+	end
 end
 
 function get_item_key(item_table)
@@ -1361,6 +1370,9 @@ function display_display()
 
 	refresh_all_network() -- so that we get display names and stored items etc.
 	if display_type == "itemscroll" then
+
+		test_display_names()
+
 		local monitor_side = getFirstPeripheralSide("monitor")
 		if monitor_side == "" then
 			print("Monitor not found. Exiting")

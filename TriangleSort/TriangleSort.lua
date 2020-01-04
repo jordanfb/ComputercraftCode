@@ -63,6 +63,7 @@ display_names_to_keys = {}
 searchable_display_names_to_keys = {}
 
 sorting_computer_type = "sorter" -- sorter, display, terminal
+display_type = "itemscroll" -- if it's a display, what will it display?
 
 master_id = -1
 modem_side = ""
@@ -290,23 +291,15 @@ function slow_print_display_name_item_count_command(lower_command, command, rest
 	paged_print_all_stored_items()
 end
 
-function print_all_stored_items(wait)
-	-- FIX
-	for k, v in pairs(items_stored) do
-		print("" .. k .. ": " .. v.count)
-		sleep(wait)
-	end
-end
-
 function paged_print_all_stored_items()
 	local output = ""
 	for k, v in pairs(items_stored) do
-		output = output .. k .. ": " .. v.count .. "\n"
+		output = output .. get_display_from_key(k) .. ": " .. v.count .. "\n"
 	end
 	textutils.pagedPrint(output)
 end
 
-function print_all_display_names(lower_commanprindid, command, rest)
+function print_all_display_names(lower_command, command, rest)
 	textutils.pagedPrint(textutils.serialise(item_display_names))
 end
 
@@ -792,6 +785,10 @@ function get_display_name(item_table)
 	return item_display_names[k] or k -- if it doesn't know the name then return the default item name
 end
 
+function get_display_from_key(item_key)
+	return item_display_names[k] or item_key -- if it doesn't know the name then return the default item name
+end
+
 function get_item_key(item_table)
 	return item_table.name .. "-"..item_table.damage
 end
@@ -1182,11 +1179,22 @@ function load_sorting_device_action()
 	-- is this a display?
 	-- who knows? hopefully us...
 	sorting_computer_type = settings.get(settings_prefix.."sorting_purpose", "REPLACE_THIS")
+	display_type = settings.get(settings_prefix.."display_type", "itemscroll")
 	if sorting_computer_type == "REPLACE_THIS" then
 		sorting_computer_type = input_from_set_of_choices("Is this a 'sorter', 'display', or 'terminal'?", {"sorter", "display", "terminal"}, true)
 		settings.set(settings_prefix.."sorting_purpose", sorting_computer_type)
+		if sorting_computer_type == "display" then
+			-- edit display initial settings
+			edit_display_initial_settings()
+		end
 		save_settings()
 	end
+end
+
+function edit_display_initial_settings()
+	-- what display types do we have? for now, just start with scrolling stored items, and move from there probably...
+	display_type = input_from_set_of_choices("Is this a 'itemscroll', 'notimplemented', or 'chooseitemscroll'?", {"itemscroll"}, true)
+	settings.set(settings_prefix.."display_type", display_type)
 end
 
 function sort_currently_selected()
@@ -1304,6 +1312,7 @@ end
 
 function terminal_input()
 	-- this handles computer input from humans! This could probably also be run from sorters since they're all parallel... hmmm...
+	refresh_all_network() -- one last refresh so that we get item names and sorting systems and whatever.
 	while running do
 		io.write("> ")
 		local human_input = read()
@@ -1325,6 +1334,40 @@ function terminal_input()
 		end
 		if not valid_command then
 			print("Not a valid command. Type 'help' for help")
+		end
+	end
+end
+
+function display_display()
+	-- display whatever you're set to display!
+	-- display_type could be "itemscroll" or other things that aren't implemented yet!
+	-- I should really make it so that one computer can display multiple things but that's not ready yet :P
+	-- for now I'm just going to make a computer that updates every minute or so to fetch items and slowly scolls through items
+
+	refresh_all_network() -- so that we get display names and stored items etc.
+	if display_type == "itemscroll" then
+		local m = peripheral.wrap("top") -- FIX only allowing the top of a computer, should be set in settings and also allow multiple different displays
+		local width, height = m.getSize()
+		local i = 0
+		while running do
+			for k, v in pairs(items_stored) do
+				m.scroll(1)
+				m.setCursorPos(1, height)
+				m.write(get_display_from_key(k) .. ": " .. v.count) -- print the line on the monitor, then live life happily!
+				i = i + 1
+				if not running then
+					break -- so that we don't have to go through the entire loop to update etc.
+				end
+				sleep(1)
+			end
+			m.scroll(1) -- to show we've made it to the end
+			if i > 60 then
+				-- every minute request an update on the item list! Is this a good idea? I'm not sure...
+				-- now at least it's not going to change it when looping over it hopefully...
+				i = 0
+				request_stored_items()
+				sleep(1) -- give it time to respond I guess? Hopefully that will be enough
+			end
 		end
 	end
 end
@@ -1352,7 +1395,8 @@ function main()
 	elseif sorting_computer_type == "terminal" then
 		parallel.waitForAll(receive_rednet_input, terminal_input)
 	elseif sorting_computer_type == "display" then
-		print("Monitors/displays are not yet supported, sorry!")
+		-- print("Monitors/displays are not yet supported, sorry!")
+		parallel.waitForAll(receive_rednet_input, display_display)
 	end
 
 	deinitialization() -- I don't know if this will get run so who knows....

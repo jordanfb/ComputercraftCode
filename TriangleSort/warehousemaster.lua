@@ -133,10 +133,10 @@ end
 function BuildItemsStoredToSlotTable()
 	-- when loading files we load using this
 	itemsStored = {}
-	print("Should be printing all the items now")
+	-- print("Should be printing all the items now")
 	for i, v in pairs(itemsStoredBySlot) do
 		-- add them to the itemsStored table, but for now just print them
-		print(i .. ": " .. v.item .. " count: " .. v.count .. " max: " .. v.max)
+		-- print(i .. ": " .. v.item .. " count: " .. v.count .. " max: " .. v.max)
 		if itemsStored[v.item] == nil then
 			itemsStored[v.item] = {count = 0, locations = {}}
 		end

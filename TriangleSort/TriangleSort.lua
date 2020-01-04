@@ -293,8 +293,8 @@ end
 
 function paged_print_all_stored_items(alphabetical)
 	-- defaults to alphabetical
+	local output = ""
 	if alphabetical == nil or alphabetical == true then
-		local output = ""
 		for display_name, item_key in itemKeyAlphabeticallyByDisplayName() do
 			if items_stored[item_key] ~= nil then
 				-- only display it if we have it in storage duh

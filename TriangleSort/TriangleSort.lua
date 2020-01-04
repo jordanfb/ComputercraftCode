@@ -825,6 +825,7 @@ function itemKeyAlphabeticallyByDisplayName()
 	local i = 0      -- iterator variable
 	local iter = function()   -- iterator function
 		i = i + 1
+		print(textutils.pagedPrint(display_names_to_keys[a[i]]))
 		if a[i] == nil then return nil
 		else return a[i], display_names_to_keys[a[i]][1] -- loops over display_name, item_key (which for some reason is in a table?)
 		end

@@ -352,7 +352,7 @@ function sort_current()
 end
 
 function sort_input()
-	while true do
+	while running do
 		-- input items from the chest in front of it, then if they deserve to go into storage store them. If they don't then don't
 		-- turtle.select(1)
 		while turtle.suck() do

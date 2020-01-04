@@ -291,10 +291,20 @@ function slow_print_display_name_item_count_command(lower_command, command, rest
 	paged_print_all_stored_items()
 end
 
-function paged_print_all_stored_items()
-	local output = ""
-	for k, v in pairs(items_stored) do
-		output = output .. get_display_from_key(k) .. ": " .. v.count .. "\n"
+function paged_print_all_stored_items(alphabetical)
+	-- defaults to alphabetical
+	if alphabetical == nil || alphabetical == true then
+		local output = ""
+		for display_name, item_key in itemKeyAlphabeticallyByDisplayName() do
+			if items_stored[item_key] ~= nil then
+				-- only display it if we have it in storage duh
+				output = output .. display_name .. ": " .. items_stored[item_key].count .. "\n"
+			end
+		end
+	else
+		for k, v in pairs(items_stored) do
+			output = output .. get_display_from_key(k) .. ": " .. v.count .. "\n"
+		end
 	end
 	textutils.pagedPrint(output)
 end

@@ -767,6 +767,8 @@ function initialization()
 		if get_computer_type() == "turtle" then
 			add_turtle_terminal_commands()
 		end
+	elseif sorting_computer_type == "display" then
+		refresh_all_network()
 	end
 	-- now it knows where it sorts to.
 	-- now it should tell everyone where it goes and also find out from everyone else where they go from. It now has to initialize everything.
@@ -894,6 +896,7 @@ function receive_rednet_input()
 				find_local_connections()
 			end
 		elseif message.packet == "add_storage_node" then
+			print("Recieved a storage node")
 			-- add the storage node to the master's list of storage nodes!
 			-- local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
 			if storage_nodes[message.data.rednet_id] == nil then
@@ -904,6 +907,7 @@ function receive_rednet_input()
 				storage_nodes[message.data.rednet_id].id = message.data.id
 			end
 		elseif message.packet == "send_stored_items" then
+			print("Recieved storage items")
 			-- add the items stored to the lists
 			-- data = {items = get_items_count_table(), id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
 			storage_nodes[message.data.rednet_id] = message.data -- it has the items!
@@ -1351,7 +1355,7 @@ function display_display()
 	if display_type == "itemscroll" then
 		local m = peripheral.wrap("top") -- FIX only allowing the top of a computer, should be set in settings and also allow multiple different displays
 		local width, height = m.getSize()
-		local i = 0
+		local i = 60
 		while running do
 			for k, v in pairs(items_stored) do
 				print("Displaying item stored")

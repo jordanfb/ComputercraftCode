@@ -1414,10 +1414,11 @@ function display_display()
 		local i = 60
 		while running do
 			for display_name, item_key in itemKeyAlphabeticallyByDisplayName() do
-				m.scroll(1)
-				m.setCursorPos(1, height)
 				if items_stored[item_key] ~= nil then
+
 					-- only display it if we have it in storage duh
+					m.scroll(1)
+					m.setCursorPos(1, height)
 					m.write(display_name .. ": " .. items_stored[item_key].count) -- print the line on the monitor, then live life happily!
 					i = i + 1
 					if not running then

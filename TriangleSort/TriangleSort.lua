@@ -450,7 +450,7 @@ function load_display_names()
 				-- it's not a blank line I guess
 				local t = {}
 				for word in string.gmatch(line, '([^,]+)') do
-				    t[#t+1] = word
+					t[#t+1] = word
 				end
 				if #t ~= 3 then
 					print("Error parsing line: '"..line.."' got "..#t.." values")
@@ -487,7 +487,7 @@ function load_default_destinations()
 				-- it's not a blank line I guess
 				local t = {}
 				for word in string.gmatch(line, '([^,]+)') do
-				    t[#t+1] = word
+					t[#t+1] = word
 				end
 				if #t ~= 3 then
 					print("Error parsing destination line: '"..line.."' got "..#t.." values")
@@ -789,6 +789,47 @@ end
 
 function get_display_from_key(item_key)
 	return item_display_names[item_key] or item_key -- if it doesn't know the name then return the default item name
+end
+
+function alphabetical_key_sort(table)
+	local t = {}
+	for n in pairs(lines) do
+		table.insert(t, n)
+	end
+		table.sort(t)
+		return t
+	end
+
+function pairsByKeys(t, f)
+	local a = {}
+	for n in pairs(t) do
+		table.insert(a, n)
+	end
+	table.sort(a, f)
+	local i = 0      -- iterator variable
+	local iter = function ()   -- iterator function
+		i = i + 1
+		if a[i] == nil then return nil
+		else return a[i], t[a[i]]
+		end
+	end
+	return iter
+end
+
+function itemKeyAlphabeticallyByDisplayName()
+	local a = {}
+	for n in pairs(display_names_to_keys) do -- get the display_names
+		table.insert(a, n)
+	end
+	table.sort(a)
+	local i = 0      -- iterator variable
+	local iter = function()   -- iterator function
+		i = i + 1
+		if a[i] == nil then return nil
+		else return a[i], display_names_to_keys[a[i]] -- loops over display_name, item_key
+		end
+	end
+	return iter
 end
 
 function get_item_key(item_table)
@@ -1371,11 +1412,13 @@ function display_display()
 		local width, height = m.getSize()
 		local i = 60
 		while running do
-			for k, v in pairs(items_stored) do
+			for display_name, item_key in itemKeyAlphabeticallyByDisplayName() do
+			-- for k, v in pairs(items_stored) do
 				-- print("Displaying item stored")
 				m.scroll(1)
 				m.setCursorPos(1, height)
-				m.write(get_display_from_key(k) .. ": " .. v.count) -- print the line on the monitor, then live life happily!
+				-- m.write(get_display_from_key(k) .. ": " .. v.count) -- print the line on the monitor, then live life happily!
+				m.write(display_name .. ": " .. items_stored[item_key].count) -- print the line on the monitor, then live life happily!
 				i = i + 1
 				if not running then
 					break -- so that we don't have to go through the entire loop to update etc.

@@ -825,7 +825,7 @@ function itemKeyAlphabeticallyByDisplayName()
 	local i = 0      -- iterator variable
 	local iter = function()   -- iterator function
 		i = i + 1
-		print(textutils.pagedPrint(textutils.serialise(display_names_to_keys[a[i]])))
+		-- print(textutils.pagedPrint(textutils.serialise(display_names_to_keys[a[i]])))
 		if a[i] == nil then return nil
 		else return a[i], display_names_to_keys[a[i]][1] -- loops over display_name, item_key (which for some reason is in a table?)
 		end
@@ -1414,19 +1414,17 @@ function display_display()
 		local i = 60
 		while running do
 			for display_name, item_key in itemKeyAlphabeticallyByDisplayName() do
-			-- for k, v in pairs(items_stored) do
-				-- print("Displaying item stored")
 				m.scroll(1)
 				m.setCursorPos(1, height)
-				print("Results: " ..display_name .. " and")
-				print(item_key)
-				-- m.write(get_display_from_key(k) .. ": " .. v.count) -- print the line on the monitor, then live life happily!
-				m.write(display_name .. ": " .. items_stored[item_key].count) -- print the line on the monitor, then live life happily!
-				i = i + 1
-				if not running then
-					break -- so that we don't have to go through the entire loop to update etc.
+				if items_stored[item_key] ~= nil then
+					-- only display it if we have it in storage duh
+					m.write(display_name .. ": " .. items_stored[item_key].count) -- print the line on the monitor, then live life happily!
+					i = i + 1
+					if not running then
+						break -- so that we don't have to go through the entire loop to update etc.
+					end
+					sleep(1)
 				end
-				sleep(1)
 			end
 			-- print("Done displaying items stored")
 			i = i + 1

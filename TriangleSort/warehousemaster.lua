@@ -301,7 +301,7 @@ function receive_rednet_input()
 			local data = {items = get_items_count_table(), id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
 			local packet = {packet = "send_stored_items", data = data}
 			rednet.send(sender_id, packet, network_prefix)
-		elseif message.packet == "get_sorting_network_connections" or message.packet == "get_storage_nodes" then
+		elseif message.packet == "get_storage_nodes" then
 			-- a new computer has joined the network, tell it what we are connected to!
 			-- tell them who we are!
 			-- tell them that you're a storage master machine!

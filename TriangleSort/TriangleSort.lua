@@ -788,6 +788,7 @@ function get_display_name(item_table)
 end
 
 function get_display_from_key(item_key)
+	print("Trying to get display name got "..item_display_names[k])
 	return item_display_names[k] or item_key -- if it doesn't know the name then return the default item name
 end
 
@@ -929,12 +930,10 @@ function receive_rednet_input()
 				rednet.send(sender_id, packet, network_prefix)
 			end
 		elseif message.packet == "set_item_display_names" then
-			print("Recieving item display names")
 			item_display_names = message.data
 			display_names_to_keys = {}
 			searchable_display_names_to_keys = {}
 			for k, v in pairs(item_display_names) do
-				print(k .. " " .. v)
 				if display_names_to_keys[v] == nil then
 					display_names_to_keys[v] = {}
 					searchable_display_names_to_keys[remove_spaces(v)] = {}

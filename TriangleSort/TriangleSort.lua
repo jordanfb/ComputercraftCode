@@ -845,7 +845,8 @@ function receive_rednet_input()
 			-- copy the startup file into the main place
 			if (settings.get(settings_prefix .. "initialize_startup_on_update", true)) then
 				print("Copying startup file to startup.lua, can be disabled in settings")
-				shell.run("copy ComputercraftCode/TriangleSort/sortingstartup.lua /startup.lua")
+				fs.delete("/startup.lua")
+				fs.copy("ComputercraftCode/TriangleSort/warehousemasterstartup.lua", "/startup.lua")
 			end
 			-- then reboot
 			running = false

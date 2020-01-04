@@ -138,7 +138,7 @@ function BuildItemsStoredToSlotTable()
 		-- add them to the itemsStored table, but for now just print them
 		print(i .. ": " .. v.item .. " count: " .. v.count .. " max: " .. v.max)
 		if itemsStored[v.item] == nil then
-			itemsStored[v.item] = {count = 0, location = {}}
+			itemsStored[v.item] = {count = 0, locations = {}}
 		end
 		-- now add the item stored to the table
 		itemsStored[v.item].count = itemsStored[v.item].count + v.count

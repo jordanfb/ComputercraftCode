@@ -863,13 +863,21 @@ end
 function request_stored_items()
 	-- ask all the storage_masters you know to send you their contents
 	packet = {packet = "get_stored_items"}
-	rednet.broadcast(packet, network_prefix) -- request other connections in the network. Theoretically I should directly send to each of the masters rather than broadcast it but...
+	send_to_storage_nodes(packet)
+	-- rednet.broadcast(packet, network_prefix) -- request other connections in the network. Theoretically I should directly send to each of the masters rather than broadcast it but...
 end
 
 function request_storage_masters()
 	-- send a message to all the storagemasters requesting that they reveal themselves
+	-- This can't use send_to_storage_nodes because we don't know them yet
 	packet = {packet = "get_storage_nodes"}
-	rednet.broadcast(packet, network_prefix) -- request other connections in the network
+	rednet.broadcast(packet, network_prefix)
+end
+
+function send_to_storage_nodes(packet)
+	for rednet_id, node in pairs(storage_nodes) do
+		rednet.send(rednet_id, packet, network_prefix)
+	end
 end
 
 function UpdateStorageCount()
@@ -982,11 +990,9 @@ function receive_rednet_input()
 			UpdateStorageCount()
 		elseif message.packet == "storage_change_update" then
 			-- for the update ticker at the very least and possibly more types
-			-- print("NOT IMPLEMENTED YET FIX")
-			if sorting_computer_type == "display" and display_type == "storageupdateticker" then
-				-- store the item change so we can display it!
-				item_storage_updates[#item_storage_updates + 1] = message.data
-			end
+			-- store the item change so we can display it or use it or whatever. The only reason why I have everyone store it is because you
+			-- have to subscribe to this to get it
+			item_storage_updates[#item_storage_updates + 1] = message.data
 		elseif message.packet == "get_master_id" then
 			-- if this is the master then it returns this ID
 			if sorting_destination_settings.isMaster then

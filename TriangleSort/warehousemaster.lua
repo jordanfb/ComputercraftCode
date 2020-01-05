@@ -145,6 +145,7 @@ function initialize()
 	fake_caches_per_level = width * depth
 	print(num_caches .. " caches. " .. num_fake_caches .. " fake caches.")
 	initialize_network()
+	broadcast_existence()
 	updateTurtleSpawning() -- check if there are unresolved fetch requests and spawn turtles if there are!
 end
 
@@ -822,6 +823,12 @@ function initialize_network()
 			print("Error opening rednet, this will likely cause errors")
 		end
 	end
+end
+
+function broadcast_existence()
+	local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
+	local packet = {packet = "add_storage_node", data = data}
+	rednet.broadcast(packet, network_prefix)  -- tell everyone who I am
 end
 
 function shut_down_network()

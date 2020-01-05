@@ -975,6 +975,9 @@ function receive_rednet_input()
 				storage_nodes[message.data.rednet_id].label = message.data.label
 				storage_nodes[message.data.rednet_id].id = message.data.id
 			end
+			if sorting_computer_type == "display" then
+				request_stored_items()
+			end
 			if sorting_computer_type == "display" and display_type == "storageupdateticker" then
 				-- subscribe to item changes so we can print them out!
 				local packet = {packet = "subscribe_to_storage_changes"}

@@ -321,7 +321,7 @@ end
 
 function toggle_verbose_command(lower_command, command, rest)
 	verbose = not verbose
-	print("Set verbose to " .. verbose)
+	print("Set verbose to " .. tostring(verbose))
 end
 
 function get_random_storage_node()
@@ -330,7 +330,7 @@ function get_random_storage_node()
 		all_nodes[#all_nodes + 1] = id
 	end
 	if #all_nodes == 0 then
-		return -1
+		return nil
 	else
 		return all_nodes[math.random(#all_nodes)]
 	end
@@ -418,10 +418,10 @@ function fetch_items_from_random_storage(item_key, count, exact_number)
 	local data = {item = {key = item_key, count = count, exact_number = exact_number}, requesting_computer = os.getComputerID()}
 	local packet = {packet = "fetch_items", data = data}
 	-- I don't have a good way to handle multiple storage systems at once so for now I'll just send it to one of them I guess? welp... FIX THIS
-	if #storage_nodes == 0 then
+	local node_picked = get_random_storage_node()
+	if node_picked == nil then
 		print("ERROR, no known storage nodes")
 	else
-		local node_picked = get_random_storage_node()
 		print("Sending request to storagemaster at id "..node_picked)
 		rednet.send(node_picked, packet, network_prefix)
 	end

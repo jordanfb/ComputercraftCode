@@ -410,9 +410,9 @@ function test_pathfinding()
 			break
 		else
 			goalx = tonumber(x)
-			goaly = read_in_number("Enter y coordinate", false)
-			goalz = read_in_number("Enter z coordinate", false)
-			goalf = read_in_number("Enter facing direction 0-3", false)
+			goaly = tonumber(read_in_number("Enter y coordinate", false))
+			goalz = tonumber(read_in_number("Enter z coordinate", false))
+			goalf = tonumber(read_in_number("Enter facing direction 0-3", false))
 			-- now go to the coordinates!
 			pathfindToFacing(goalx, goaly, goalz, goalf)
 		end

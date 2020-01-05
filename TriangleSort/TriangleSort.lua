@@ -900,6 +900,7 @@ function receive_rednet_input()
 			break
 		elseif message.packet == "update_network" then
 			-- update from github!
+			print("Updating")
 			shell.run("github clone jordanfb/ComputercraftCode")
 			-- copy the startup file into the main place
 			if (settings.get(settings_prefix .. "initialize_startup_on_update", true)) then
@@ -907,7 +908,7 @@ function receive_rednet_input()
 				-- shell.run("copy ComputercraftCode/TriangleSort/sortingstartup.lua /startup.lua")
 				fs.delete("/startup.lua")
 				fs.copy("ComputercraftCode/TriangleSort/sortingstartup.lua", "/startup.lua")
-				print("Copied")
+				print("Copied!")
 			end
 			-- then reboot
 			running = false
@@ -1472,6 +1473,7 @@ function display_display()
 			end
 		end
 	elseif display_type == "storageupdateticker" then
+		print("Starting update ticker display")
 		-- always subscribe to any new storage systems you hear about!
 		-- now we just display updates as they come in? I'm not going to implement this yet but I'll leave this here
 		local number_of_updates = 0

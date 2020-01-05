@@ -7,13 +7,29 @@ version goals:
 v0.1
 DONE: only load items and store where they're loaded in the item table (only put in items that we don't need because manual removal will mess up the system)
 v1.1
-need to filter out unstackable items presumably in a earlier turtle that goes to the "junk" storage. Alternatively I need to be able to empty caches better
-so we can store it then remove it. But we still don't want things like used shovels etc. going into storage so we do need it at some point yeah.
-retrieve items from a 2d plane when requested
+DONE: code to set up turtles and fetch requests on warehousemaster side
+code to request a fetch of something on the terminal side
+retrieve items from a 2d plane when requested and can handle restarts apart from terrible edge cases
 retrieval bots refuel when needed
-also need to figure out what to do if something goes wrong and the items aren't where you expect them, but maybe we'll just accept that for now
+retrieval bots update when told to
 DONE: rednet connection to other computers and ability to send what we have in storage
-rednet request items fetched
+DONE: rednet request items fetched
+v1.2
+also need to figure out what to do if something goes wrong and the items aren't where you expect them, but maybe we'll just accept that for now
+		-- it's simple enough to just have the fetcher say "I tried to fetch this many of this but I got this many of that instead" and then the master can just
+			update the tallys of both and add the request back to the stack? That'll likely fuck up item prediction though...
+			maybe a v1.2 issue :P
+need to filter out unstackable items presumably in a earlier turtle that goes to the "junk" storage. Alternatively I need to be able to empty caches better
+	so we can store it then remove it. But we still don't want things like used shovels etc. going into storage so we do need it at some point yeah.
+	-- maybe we just ignore it for now and say "don't put things in/be very careful?" We can push this back to a v1.2 issue after which we'll be able to empty
+		caches and the problem kinda goes away... but still yeah the used tool side which is kinda junk...
+code to fetch something on the display side (perhaps integrate it with the scrolling item display? That would be simple enough and make sense and be awesome)
+be able to empty caches and still predict where items will go
+integration with custom orders (have an option to fetch the items as well)
+v1.3
+error handling, perhaps worst case scenario I have it empty all the items from a cache so we know it's empty or move them to another cache
+swapping item caches on request of an operator
+	-- what happens when an item is moving towards a cache but the cache gets filled? What happens when there's an alternative? What happens when there isn't one?
 
 we're going to have some difficulty with retrieval when we're removing items too unless we make a point to not remove the last item, which is legitimate and
 probably the simplest option, because otherwise it's a race condition between the fetching robots and the pipes.
@@ -32,6 +48,24 @@ automatically keep fetching items as long as we have a boolean to check about em
 
 Honestly just start with not emptying it and the unstackable/unsortable/junk sorting and work from there. Then go to crafting turtles, then monitoring turtles!
 Then you have basically everything.
+]]--
+
+
+--[[
+Current todo as of 1/5/2020 12:38 pm
+-- DONE: need to subtract the items from our stored item table that we've told the turtle to retrieve
+-- DONE: need to add a secondary fetch for all the items that we weren't able to fit in that cache/that turtle/whatever so it can send another turtle.
+need to make the turtle go fetch the items
+need to make the turtle tell the master if it hasn't been able to extract all those items so the master can make another fetch request
+make it account for time for item travel. Can we assume that after the computer/server restarted it was long enough for the items to traverse?
+	I'm not sure, maybe hold all the fetching for a minute or so? That'll be annoying to test. I guess we should just continue on as though time never
+	stopped to make sure.
+make it account for emptying caches with item travel! :P
+
+
+
+check the version plan :P
+Test out the update ticker display display and see if it works!
 ]]--
 
 
@@ -612,17 +646,7 @@ data = {
 						BuildItemsStoredToSlotTable() -- update the table!
 						saveItemsStored() -- save the item changes!
 						send_item_storage_updates(data.item.key, -data.item.count, itemsStored[data.item.key].count) -- send an update to computers that are subscribed!
---[[
-Current todo as of 1/5/2020 12:38 pm
--- need to subtract the items from our stored item table that we've told the turtle to retrieve
--- need to add a secondary fetch for all the items that we weren't able to fit in that cache/that turtle/whatever so it can send another turtle.
-need to make the turtle go fetch the items
-need to make the turtle tell the master if it hasn't been able to extract all those items so the master can make another fetch request
-make it account for time for item travel. Can we assume that after the computer/server restarted it was long enough for the items to traverse?
-	I'm not sure, maybe hold all the fetching for a minute or so? That'll be annoying to test. I guess we should just continue on as though time never
-	stopped to make sure.
-make it account for emptying caches with item travel! :P
-]]
+
 						-- -- save the fetch bot status
 						-- save_fetch_status()
 

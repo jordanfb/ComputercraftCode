@@ -1495,7 +1495,7 @@ function display_display()
 					-- will already have the minus sign so we don't need to add it
 				end
 				-- write the latest update to storage
-				m.write(get_display_from_key(update.name) .. " " .. change_text .. " => " .. update.count)
+				m.write(get_display_from_key(update.key) .. " " .. change_text .. " => " .. update.count)
 			end
 			number_of_updates = #item_storage_updates
 			sleep(1)

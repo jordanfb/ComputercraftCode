@@ -505,6 +505,7 @@ function receive_rednet_input()
 		elseif message.packet == "subscribe_to_storage_changes" then
 			-- this is a message so that I can send that computer changes in item storage amounts so we can display them etc.
 			-- it's meant to be used for a ticker etc. that displays storage changes.
+			print("New subscriber to storage changes with id: " .. sender_id)
 			subscribed_to_storage_changes[#subscribed_to_storage_changes + 1] = sender_id -- so we can send it item storage updates!
 		end
 	end

@@ -143,7 +143,7 @@ function slow_custom_command_entry()
 			else
 				-- do nothing just print the results
 			end
-			print("Fetch set to " .. fetch)
+			print("Fetch set to " .. tostring(fetch))
 		elseif input_lower == "summary" then
 			print("Here is the custom destination")
 			textutils.pagedPrint(textutils.serialise(packet.data))

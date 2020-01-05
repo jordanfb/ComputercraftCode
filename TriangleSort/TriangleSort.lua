@@ -147,6 +147,11 @@ function slow_custom_command_entry()
 		elseif input_lower == "summary" then
 			print("Here is the custom destination")
 			textutils.pagedPrint(textutils.serialise(packet.data))
+			if fetch then
+				print("Will fetch items from storage")
+			else
+				print("Will NOT fetch items from storage")
+			end
 		elseif input_lower == "help" or input_lower == "?" then
 			local commands = {help=true, summary=true, additem=true,  searchnames=true, send=true, nametoid=true, removeitem=true,
 							addempty=true, destination=true, cancel=true, repeatitem=true, fetch=true}

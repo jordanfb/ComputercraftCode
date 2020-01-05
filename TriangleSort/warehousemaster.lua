@@ -188,10 +188,12 @@ end
 
 function SaveTableToFile(table, filename)
 	if filename == nil or table == nil then
+		print("Error can't save file something is nil")
 		return -- can't save nothing
 	end
 	local f = fs.open(filename, 'w');
 	if f == nil then
+		print("Error opening file " .. tostring(filename))
 		return -- error opening the file
 	end
 	f.write(textutils.serialize(table));
@@ -489,6 +491,10 @@ function receive_rednet_input()
 			master_id = message.data
 		elseif message.packet == "fetch_items" then
 			-- message.data = {item = {key=item_key, count = 10000, exact_number=false}, requesting_computer = rednet_id}
+			print("Recieved fetch request")
+			print("Fetch request for: ")
+			print(message.data.item.key)
+			print(message.data.item.count)
 			message.data.status = "waiting" -- it's not done so make it wait!
 			fetch_requests[#fetch_requests+1] = message.data
 			-- then save it, and also update whether or not we're spawning more turtles!

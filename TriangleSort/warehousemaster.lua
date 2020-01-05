@@ -88,7 +88,7 @@ local tunnel_separation = 4 -- spaces between tunnel holes, for pipe filled thin
 local fetch_bot_start_position = {x = 1, y = 1, z = 1, f = 2} -- depends on how you place the fetch bots into the world. My current method places them facing south (N=0, E=1, S=2, W=3)
 local output_coords = {x = width, y = depth, z = 1, f = "down"}
 local refuel_coords = {x = width+1, y = depth, z = 1, f = "down"}
-local die_coords = {x = width+2, y = depth, z = 1, f = 1,2,3,4(north, east south west)}
+local die_coords = {x = width+2, y = depth, z = 1, f = 1} -- die coords are currently facing east
 
 
 local max_items_stored_in_turtle = 64 * 16

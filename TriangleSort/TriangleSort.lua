@@ -29,6 +29,9 @@ of messages they've responded to to avoid responding multiple times.
 	- return_custom_destinations and get_custom_destinations needs to be called by displays and actually displayed
 	- storage displays when we have that working
 
+	- storage ticker update display
+		- need to handle actually receiving the item updates but after that we're pretty close to set. It should be subscribed automatically to them.
+
 - Faster custom recipie additions
 	- include a turtle that can add an item that gets passed in? probably.
 		- I could also make it add everything in the shape of a crafting turtle so it knows what has to be empty etc. that works fine for even machines with fewer ports because it only cares about leading empty spaces
@@ -53,6 +56,7 @@ known_destinations = {Player=true, Unknown=true, Storage=true} -- the default lo
 -- STORAGE NODES AND ITEMS STORED
 storage_nodes = {} -- connected storage nodes
 items_stored = {}
+item_storage_updates = {} -- we only get these if we're subscribed to notifications
 
 -- SORTING CONNECTIONS
 connections = {} -- this is the graph of the network I guess?
@@ -961,14 +965,26 @@ function receive_rednet_input()
 				storage_nodes[message.data.rednet_id].label = message.data.label
 				storage_nodes[message.data.rednet_id].id = message.data.id
 			end
+			if sorting_computer_type == "display" and display_type == "storageupdateticker" then
+				-- subscribe to item changes so we can print them out!
+				local packet = {packet = "subscribe_to_storage_changes"}
+				rednet.send(sender_id, packet, network_prefix)
+			end
 		elseif message.packet == "send_stored_items" then
 			-- add the items stored to the lists
 			-- data = {items = get_items_count_table(), id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
 			storage_nodes[message.data.rednet_id] = message.data -- it has the items!
 			if sorting_computer_type == "display" then
-				print("Got items sent to me!")
+				print("Recieved item list")
 			end
 			UpdateStorageCount()
+		elseif message.packet == "storage_change_update" then
+			-- for the update ticker at the very least and possibly more types
+			-- print("NOT IMPLEMENTED YET FIX")
+			if sorting_computer_type == "display" and display_type == "storageupdateticker" then
+				-- store the item change so we can display it!
+				item_storage_updates[#item_storage_updates + 1] = message.data
+			end
 		elseif message.packet == "get_master_id" then
 			-- if this is the master then it returns this ID
 			if sorting_destination_settings.isMaster then
@@ -1254,7 +1270,7 @@ end
 
 function edit_display_initial_settings()
 	-- what display types do we have? for now, just start with scrolling stored items, and move from there probably...
-	display_type = input_from_set_of_choices("Is this a 'itemscroll', 'notimplemented', or 'chooseitemscroll'?", {"itemscroll"}, true)
+	display_type = input_from_set_of_choices("Is this a 'itemscroll', 'storageupdateticker', or 'chooseitemscroll'?", {"itemscroll", "storageupdateticker"}, true)
 	settings.set(settings_prefix.."display_type", display_type)
 end
 
@@ -1414,17 +1430,18 @@ function display_display()
 	-- I should really make it so that one computer can display multiple things but that's not ready yet :P
 	-- for now I'm just going to make a computer that updates every minute or so to fetch items and slowly scolls through items
 
+	local monitor_side = getFirstPeripheralSide("monitor")
+	if monitor_side == "" then
+		print("Monitor not found. Exiting")
+		running = false
+		return
+	end
+	print("Monitor found on side " .. monitor_side)
+	local m = peripheral.wrap(monitor_side)
+	local width, height = m.getSize()
+
 	refresh_all_network() -- so that we get display names and stored items etc.
 	if display_type == "itemscroll" then
-		local monitor_side = getFirstPeripheralSide("monitor")
-		if monitor_side == "" then
-			print("Monitor not found. Exiting")
-			running = false
-			return
-		end
-		print("Monitor found on side " .. monitor_side)
-		local m = peripheral.wrap(monitor_side)
-		local width, height = m.getSize()
 		local i = 60
 		while running do
 			for display_name, item_key in itemKeyAlphabeticallyByDisplayName() do
@@ -1453,6 +1470,32 @@ function display_display()
 				print("Requested item update")
 				sleep(1) -- give it time to respond I guess? Hopefully that will be enough
 			end
+		end
+	elseif display_type == "storageupdateticker" then
+		-- always subscribe to any new storage systems you hear about!
+		-- now we just display updates as they come in? I'm not going to implement this yet but I'll leave this here
+		local number_of_updates = 0
+		while running do
+			for i = number_of_updates+1, #item_storage_updates do
+				-- we've got a new update and we should display it on our monitor!
+				m.scroll(1)
+				m.setCursorPos(1, height)
+				local update = item_storage_updates[i]
+				local change_text = update.change .. "" -- make it a string so we can add the +/- sign
+				if update.change > 0 then
+					-- make it green!
+					m.setTextColor(colors.green)
+					change_text = "+" .. change_text
+				else
+					-- make it red!
+					m.setTextColor(colors.red)
+					-- will already have the minus sign so we don't need to add it
+				end
+				-- write the latest update to storage
+				m.write(get_display_from_key(update.name) .. " " .. change_text .. " => " .. update.count)
+			end
+			number_of_updates = #item_storage_updates
+			sleep(1)
 		end
 	end
 end

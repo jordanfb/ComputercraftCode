@@ -22,8 +22,10 @@ F = refueling spot, interact with it by going to 0,0,0 and facing towards 3 (wes
 
 side view:
  -----
-|     |
-| ####|
+| PPPPPP
+| ####|P
+|     |P
+| ####|P
 | PPPPPP
 | ####|P
 |     |P
@@ -31,7 +33,7 @@ side view:
 | PPPPPP
 | ####|P
 F0    |PI
- E----
+ E####
 
 0 = 0,0,0 coordinate (underneath this is the output chest)
 F = refueling spot, interact with it by going to 0,0,0 and facing towards 3 (west)
@@ -44,6 +46,31 @@ Alternatively if the turtle is refilling the caches as well then simply remove t
 
 Do we want to support it putting them away too? That would be pretty cool I'll give you that...
 May as well? It's not the priority though. We'll support scanning the vertical slice to figure that out
+
+
+
+
+This turtle gets placed by a warehousemaster and is given a mission. that mission can be:
+fetch, put, refuel, update, return
+and have data associated with it.
+when fetch and put end they go to refuel or update or die, and slowly move along the chain to the right because they all eventually return/die.
+We're just going to save and load a table on startup from a file (if the file doesn't exist, ask the master for help/a mission)
+data = {
+		position = {x = 1, y = 1, z = 1, f = 2},
+		mission = "fetch", item = {x=4, y=5, z=8, f="up", key="minecraft:stone-0", count = 128, index = cache_index},
+		min_refuel_level = 1000, refuel_to_level = 5000
+		update_after = false,
+		output_coords = {x = 100, y = 100, z = 100, f = "down"},
+		refuel_coords = {x = 100, y = 100, z = 100, f = "down"},
+		die_coords = {x = 101, y = 100, z = 100, f = 1,2,3,4(north, east south west)}
+		}
+When asking for help (and initializing) this entire table gets sent to the turtle so that we can update settings easier on the master.
+The master will have to keep track of which turtles have been updated after it gets told to update and which haven't, which is a bit of a pain
+but it just goes in the status table which gets saved.
+
+it should update in front of the die/return coords since it can just ask to be eaten. No need to restart since it'll get forcefully restarted once placed.
+Die also has to delete the table keeping track of current mission.
+
 
 ]]--
 
@@ -64,7 +91,7 @@ local storageHeightPerLayer = 0 -- z height between access layers for the turtle
 -- 3, which is a effecient double layer of caches that the turtle fills
 -- 4, which is a efficient 2 layer of caches and 1 of pipes that are automatically refilled
 
-local facing = 3
+local facing = 2
 local x = 0
 local y = 0
 local z = 0
@@ -122,7 +149,7 @@ function ZeroPositionFromShaft()
 	end
 	turtle.turnLeft() -- then turn back one so we know it's facing the right way
 
-	facing = 3
+	facing = 2
 	x = 0
 	y = 0
 	z = 0

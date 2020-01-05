@@ -83,7 +83,7 @@ Die also has to delete the table keeping track of current mission.
 local goalFuelLevel = 6000
 local minimumFuelLevel = 1000
 local zGoesUp = true -- if +z goes up then true. If +z goes down then false
-
+local settings_path = "fetch_turtle_settings.txt"
 
 -- Runtime variables:
 

@@ -84,6 +84,8 @@ player_review_items = false -- this is true when it's time for the player to rev
 
 terminal_commands = {}
 
+verbose = false
+
 function initialize_terminal_commands()
 	terminal_commands = {help=help_command,
 		update_all=update_network_command,
@@ -99,6 +101,8 @@ function initialize_terminal_commands()
 		slow_custom=set_custom_destination_command,
 		sort_unknown_items=sort_unknown_items_command,
 		all_items_stored=slow_print_display_name_item_count_command,
+		toggle_verbose=toggle_verbose_command,
+		set_verbose=set_verbose_network_command,
 		}
 end
 
@@ -228,6 +232,11 @@ function slow_custom_command_entry()
 	end
 end
 
+function get_next_word(text)
+	local n, space, rest = string.match(text, "([^ ]+)( *)(.*)")
+	return n, rest
+end
+
 function display_commands(command_table)
 	print("Here are the commands:")
 	local s = ""
@@ -241,6 +250,30 @@ function help_command(lower_command, command, rest)
 	display_commands(terminal_commands)
 end
 
+function set_verbose_network_command(lower_command, command, rest)
+	-- set verbose to something on the computer that you pass in!
+	local val = true
+
+	local id_text, rest = get_next_word(rest)
+	if id_text ~= nil then
+		local id = tonumber(id_text)
+		if id ~= nil then
+			-- parse the next word for the value
+			local val_text, rest = get_next_word(rest)
+			if val_text ~= nil then
+				val = string.match(string.lower(val_text), "t") -- if it has a y in it it's true
+				rednet.send(id, {packet = "set_verbose_setting", data = {value = val}}, network_prefix)
+			else
+				print("Error parsing true/false text")
+			end
+		else
+			print("Error parsing '" .. id_text .. "' to a number")
+		end
+	else
+		print("Usage: command <rednet_id> <true/false>")
+	end
+end
+
 function quit_self_command(lower_command, command, rest)
 	running = false
 	rednet.send(os.getComputerID(), {packet = "quit_network"}, network_prefix)
@@ -250,6 +283,11 @@ function quit_network_command(lower_command, command, rest)
 	running = false
 	local packet = {packet = "quit_network"}
 	broadcast_including_self(packet)
+end
+
+function toggle_verbose_command(lower_command, command, rest)
+	verbose = not verbose
+	print("Set verbose to " .. verbose)
 end
 
 function reboot_network_command(lower_command, command, rest)
@@ -900,7 +938,9 @@ function receive_rednet_input()
 	-- this function is used by the parallel api to manage the rednet side of things
 	while running do
 		local sender_id, message, received_protocol = rednet.receive(network_prefix)
-		print("Recieved rednet input: " .. message.packet)
+		if verbose then
+			print("Recieved rednet input: " .. message.packet)
+		end
 		-- figure out what to do with that message
 		if message.packet == "reboot_network" then
 			-- quit this loop
@@ -923,6 +963,8 @@ function receive_rednet_input()
 			running = false
 			reboot = true
 			break
+		elseif message.packet == "set_verbose_setting" then
+			verbose = message.data.value
 		elseif message.packet == "sort_unknown_items" then
 			-- tell the main sorter to sort the unknown items!
 			if sorting_computer_type == "sorter" and sorting_destination_settings.isMaster then
@@ -1413,10 +1455,6 @@ function terminal_input()
 				if terminal_commands[lower_c] ~= nil then
 					terminal_commands[lower_c](lower_c, c, rest)
 					valid_command = true
-				-- else
-				-- 	print("ere")
-				-- 	print(terminal_commands)
-				-- 	textutils.pagedPrint(textutils.serialise(terminal_commands))
 				end
 			end
 		end

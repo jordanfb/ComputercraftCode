@@ -72,6 +72,11 @@ it should update in front of the die/return coords since it can just ask to be e
 Die also has to delete the table keeping track of current mission.
 
 
+-- Important rednet things:
+"fetch_turtle_request_mission" -- send this to your storage master to get a new mission
+"fetch_turtle_assign_mission" -- receive this from your storage master to know what to do
+
+
 ]]--
 
 -- Settings:
@@ -92,129 +97,129 @@ local storageHeightPerLayer = 0 -- z height between access layers for the turtle
 -- 4, which is a efficient 2 layer of caches and 1 of pipes that are automatically refilled
 
 local facing = 2
-local x = 0
-local y = 0
-local z = 0
+local x = 1
+local y = 1
+local z = 1
 
 readyForService = false
 
-function ZeroPosition()
-	readyForService = false
-	if not turtle.detectUp() and not turtle.detectDown() do
-		-- it's in the shaft!
-		ZeroPositionFromShaft()
-	end
-	while turtle.detectUp() and turtle.detectDown() do
-		turtle.turnRight()
-		while turtle.forward() do
-			-- go forward into the wall
-		end
-	end
-	-- now we know that it's at the vertical shaft at (0,0)
-	if zGoesUp then
-		while turtle.down() do
-			-- head to the bottom layer!
-		end
-	else
-		-- the tower is inverted!
-		while turtle.up() do
-		end
-	end
+-- function ZeroPosition()
+-- 	readyForService = false
+-- 	if not turtle.detectUp() and not turtle.detectDown() do
+-- 		-- it's in the shaft!
+-- 		ZeroPositionFromShaft()
+-- 	end
+-- 	while turtle.detectUp() and turtle.detectDown() do
+-- 		turtle.turnRight()
+-- 		while turtle.forward() do
+-- 			-- go forward into the wall
+-- 		end
+-- 	end
+-- 	-- now we know that it's at the vertical shaft at (0,0) -- EXCEPT THAT THERE ARE GOING TO BE TWO VERTICAL SHAFTS NOW FIX THIS
+-- 	if zGoesUp then
+-- 		while turtle.down() do
+-- 			-- head to the bottom layer!
+-- 		end
+-- 	else
+-- 		-- the tower is inverted!
+-- 		while turtle.up() do
+-- 		end
+-- 	end
 
-	facing = 3
-	x = 0
-	y = 0
-	z = 0
-	readyForService = true
-end
+-- 	facing = 3
+-- 	x = 0
+-- 	y = 0
+-- 	z = 0
+-- 	readyForService = true
+-- end
 
-function ZeroPositionFromShaft()
-	-- if the turtle is in the vertical shaft already then it needs to zero in a special way. It first has to go to the bottom, then zero again
-	readyForService = false
-	if zGoesUp then
-		while turtle.down() do
-			-- head to the bottom layer!
-		end
-	else
-		-- the tower is inverted!
-		while turtle.up() do
-		end
-	end
-	while not turtle.detect() do
-		-- turn until it's facing the corner
-	end
-	while turtle.detect() do
-		-- turn until it's facing open air
-		turtle.turnRight()
-	end
-	turtle.turnLeft() -- then turn back one so we know it's facing the right way
+-- function ZeroPositionFromShaft()
+-- 	-- if the turtle is in the vertical shaft already then it needs to zero in a special way. It first has to go to the bottom, then zero again
+-- 	readyForService = false
+-- 	if zGoesUp then
+-- 		while turtle.down() do
+-- 			-- head to the bottom layer!
+-- 		end
+-- 	else
+-- 		-- the tower is inverted!
+-- 		while turtle.up() do
+-- 		end
+-- 	end
+-- 	while not turtle.detect() do
+-- 		-- turn until it's facing the corner
+-- 	end
+-- 	while turtle.detect() do
+-- 		-- turn until it's facing open air
+-- 		turtle.turnRight()
+-- 	end
+-- 	turtle.turnLeft() -- then turn back one so we know it's facing the right way
 
-	facing = 2
-	x = 0
-	y = 0
-	z = 0
-	readyForService = true
-end
+-- 	facing = 2
+-- 	x = 0
+-- 	y = 0
+-- 	z = 0
+-- 	readyForService = true
+-- end
 
-function ScanStorageDimensions()
-	-- scan the width and height of the zeroth level, and also scan the height of each layer so we know where to go.
-	-- this is because the setups could either be setups where turtles both store and retrieve or it could be a setup where pipes store and turtles retrieve
-	-- and that changes the y levels of the passageways
-	ScanStorageLevel()
-	ScanStorageHeight()
+-- function ScanStorageDimensions()
+-- 	-- scan the width and height of the zeroth level, and also scan the height of each layer so we know where to go.
+-- 	-- this is because the setups could either be setups where turtles both store and retrieve or it could be a setup where pipes store and turtles retrieve
+-- 	-- and that changes the y levels of the passageways
+-- 	ScanStorageLevel()
+-- 	ScanStorageHeight()
 
-	print("Scanned storage dimensions: x = " .. storageWidth .. ", y = " .. storageLength .. ", z = " .. storageHeight .. ". Height per layer is = " .. storageHeightPerLayer)
-end
+-- 	print("Scanned storage dimensions: x = " .. storageWidth .. ", y = " .. storageLength .. ", z = " .. storageHeight .. ". Height per layer is = " .. storageHeightPerLayer)
+-- end
 
-function ScanStorageLevel()
-	-- scan the width and length of a storage level
-	pathfindToFacing(0, 0, 0, 0) -- look north
-	-- then count how far forward (y) you can go
-	storageWidth = 0 -- x
-	storageLength = 0 -- y
-	while not turtle.detect() do
-		goForward()
-		storageLength = storageLength + 1
-	end
-	-- then measure width
-	turnRight()
-	while not turtle.detect() do
-		goForward()
-		storageWidth = storageWidth + 1
-	end
-end
+-- function ScanStorageLevel()
+-- 	-- scan the width and length of a storage level
+-- 	pathfindToFacing(0, 0, 0, 0) -- look north
+-- 	-- then count how far forward (y) you can go
+-- 	storageWidth = 0 -- x
+-- 	storageLength = 0 -- y
+-- 	while not turtle.detect() do
+-- 		goForward()
+-- 		storageLength = storageLength + 1
+-- 	end
+-- 	-- then measure width
+-- 	turnRight()
+-- 	while not turtle.detect() do
+-- 		goForward()
+-- 		storageWidth = storageWidth + 1
+-- 	end
+-- end
 
-function ScanStorageHeight()
-	-- scan the storage height and space between layers
-	pathfindToFacing(0, 0, 0, 0) -- face north so we can see where the passageways are
-	storageHeight = 0
-	storageHeightPerLayer = 0
-	local scanningHeightPerLayer = 0
-	while not turtle.detectUp() do
-		goUp()
-		storageHeight = storageHeight + 1
-		scanningHeightPerLayer = scanningHeightPerLayer + 1
-		if (not turtle.detect())
-			-- then we've found a passage!
-			if storageHeightPerLayer != 0 then
-				-- only compare it and print out if we have an error
-				if scanningHeightPerLayer != storageHeightPerLayer then
-					-- the heights are wrong!
-					print("ERROR! Wrong sized scanningHeightPerLayer: "..scanningHeightPerLayer .. " instead of correct: " ..storageHeightPerLayer)
-				end
-			else
-				-- we've found out the height per layer! set it!
-				storageHeightPerLayer = scanningHeightPerLayer
-			end
-			scanningHeightPerLayer = 0
-		end
-	end
-end
+-- function ScanStorageHeight()
+-- 	-- scan the storage height and space between layers
+-- 	pathfindToFacing(0, 0, 0, 0) -- face north so we can see where the passageways are
+-- 	storageHeight = 0
+-- 	storageHeightPerLayer = 0
+-- 	local scanningHeightPerLayer = 0
+-- 	while not turtle.detectUp() do
+-- 		goUp()
+-- 		storageHeight = storageHeight + 1
+-- 		scanningHeightPerLayer = scanningHeightPerLayer + 1
+-- 		if (not turtle.detect())
+-- 			-- then we've found a passage!
+-- 			if storageHeightPerLayer != 0 then
+-- 				-- only compare it and print out if we have an error
+-- 				if scanningHeightPerLayer != storageHeightPerLayer then
+-- 					-- the heights are wrong!
+-- 					print("ERROR! Wrong sized scanningHeightPerLayer: "..scanningHeightPerLayer .. " instead of correct: " ..storageHeightPerLayer)
+-- 				end
+-- 			else
+-- 				-- we've found out the height per layer! set it!
+-- 				storageHeightPerLayer = scanningHeightPerLayer
+-- 			end
+-- 			scanningHeightPerLayer = 0
+-- 		end
+-- 	end
+-- end
 
-function ScanAllItems()
-	-- go through all items in the setup and record where they are, then tell the storage master or whoever wants to know
-	-- this is VERY SLOW
-end
+-- function ScanAllItems()
+-- 	-- go through all items in the setup and record where they are, then tell the storage master or whoever wants to know
+-- 	-- this is VERY SLOW
+-- end
 
 function goUp()
 	if zGoesUp then
@@ -293,7 +298,7 @@ function pathfindTo(goalx, goaly, goalz)
 	-- move to this position.
 	if (goalz != z) then
 		-- move to the vertical path to go up or down levels
-		pathfind2D(0, 0)
+		pathfind2D(1, 1)
 	end
 	-- fix the height!
 	pathfindZ(goalz)
@@ -313,6 +318,9 @@ end
 
 function turnToFacing(goalF)
 	-- turn to face this direction!
+	if (goalf == "up" or goalf == "down" or goalf == 4 or goalf == 5) then
+		return -- you're always facing up and down so ignore that
+	end
 	if (goalF == 0 and facing == 3) then
 		right()
 	elseif (goalF == 3 and facing == 0) then
@@ -385,13 +393,51 @@ end
 
 
 
+function fetch_bot_initialize_network()
+	--
+end
 
+function test_pathfinding()
+	-- for now just pathfind around!
+	print("Testing pathfinding!")
+	local goalx = 1
+	local goaly = 1
+	local goalz = 1
+	local goalf = 0
+	while true do
+		local x = read_in_number("Enter x coordinate or 'quit'", true)
+		if x == "quit" then
+			break
+		else
+			goalx = tonumber(x)
+			goaly = read_in_number("Enter y coordinate", false)
+			goalz = read_in_number("Enter z coordinate", false)
+			goalf = read_in_number("Enter facing direction 0-3", false)
+			-- now go to the coordinates!
+			pathfindToFacing(goalx, goaly, goalz, goalf)
+		end
+	end
+end
+
+function read_in_number(prompt, allow_quit)
+	local input = "no"
+	while tonumber(input) == nil do
+		print(prompt)
+		input = string.lower(read())
+		if allow_quit then
+			if input == "quit" or input == "q" then
+				return "quit"
+			end
+		end
+	end
+	return input
+end
 
 
 
 function startup()
 	load_settings()
-	ZeroPosition()
+	-- ZeroPosition()
 end
 
 function main()
@@ -403,3 +449,7 @@ end
 
 
 main()
+
+
+
+test_pathfinding()

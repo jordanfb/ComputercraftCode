@@ -357,7 +357,7 @@ end
 function checkRefuel()
 	-- do this before any mission to get or store items
 	if turtle.getFuelLevel() < minimumFuelLevel then
-		refuel()
+		-- refuel() -- disabled refueling because A) it's broken and B) I want to test refueling correctly
 	end
 end
 

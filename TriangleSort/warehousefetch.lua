@@ -342,11 +342,27 @@ end
 function pathfind2D(goalx, goaly)
 	-- first move x then y? it doesn't really matter in the end
 	local deltaX = goalx - x
-	if deltaX ~= 0 then
-		-- turn so that we can move that way!
-		turnToFacing()
+	while deltaX > 0 do
+		turnToFacing(1) -- go east
+		goForward()
+		deltaX = goalx - x
+	end
+	while deltaX < 0 do
+		turnToFacing(3) -- go west
+		goForward()
+		deltaX = goalx - x
 	end
 	local deltaY = goaly - y
+	while deltaY > 0 do
+		turnToFacing(0) -- go north
+		goForward()
+		deltaY = goaly - y
+	end
+	while deltaY < 0 do
+		turnToFacing(2) -- go south
+		goForward()
+		deltaY = goaly - y
+	end
 end
 
 function returnToBase()

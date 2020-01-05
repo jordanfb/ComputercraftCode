@@ -201,9 +201,9 @@ readyForService = false
 -- 		scanningHeightPerLayer = scanningHeightPerLayer + 1
 -- 		if (not turtle.detect())
 -- 			-- then we've found a passage!
--- 			if storageHeightPerLayer != 0 then
+-- 			if storageHeightPerLayer ~= 0 then
 -- 				-- only compare it and print out if we have an error
--- 				if scanningHeightPerLayer != storageHeightPerLayer then
+-- 				if scanningHeightPerLayer ~= storageHeightPerLayer then
 -- 					-- the heights are wrong!
 -- 					print("ERROR! Wrong sized scanningHeightPerLayer: "..scanningHeightPerLayer .. " instead of correct: " ..storageHeightPerLayer)
 -- 				end
@@ -342,7 +342,7 @@ end
 function pathfind2D(goalx, goaly)
 	-- first move x then y? it doesn't really matter in the end
 	local deltaX = goalx - x
-	if deltaX != 0 then
+	if deltaX ~= 0 then
 		-- turn so that we can move that way!
 		turnToFacing()
 	end

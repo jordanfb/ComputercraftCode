@@ -274,7 +274,7 @@ function goForward()
 end
 
 function goBackwards()
-	while not turtle.back() then
+	while not turtle.back() do
 	end
 
 	if facing == 0 then -- north

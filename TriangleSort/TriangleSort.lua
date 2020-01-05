@@ -117,6 +117,7 @@ end
 
 function slow_custom_command_entry()
 	-- this is my first attempt, just for rough info
+	local fetch = false
 	packet = {packet="set_new_item_custom_destination", data={items={}, destination=""}}
 	-- loop through adding new items etc, our little own set of commands here :P
 	local input = ""
@@ -129,12 +130,26 @@ function slow_custom_command_entry()
 			print("Enter destination: ")
 			local destination = read()
 			packet.data.destination = destination
+		elseif input_lower == "fetch" then
+			print("Fetch all items from storage if possible? y/n or t/f")
+			local should_fetch = string.lower(read())
+			if #should_fetch > 0 then
+				fetch = string.find(should_fetch, "t") or string.find(should_fetch, "y")
+				if fetch then
+					fetch = true -- clean it up so it's not letters or numbers or whatever I guess
+				else
+					fetch = false
+				end
+			else
+				-- do nothing just print the results
+			end
+			print("Fetch set to " .. fetch)
 		elseif input_lower == "summary" then
 			print("Here is the custom destination")
 			textutils.pagedPrint(textutils.serialise(packet.data))
 		elseif input_lower == "help" or input_lower == "?" then
 			local commands = {help=true, summary=true, additem=true,  searchnames=true, send=true, nametoid=true, removeitem=true,
-							addempty=true, destination=true, cancel=true, repeatitem=true}
+							addempty=true, destination=true, cancel=true, repeatitem=true, fetch=true}
 			if get_computer_type() == "turtle" then
 				-- add special commands
 				commands.addcurritem = true
@@ -175,13 +190,15 @@ function slow_custom_command_entry()
 			end
 		elseif input_lower == "addempty" then
 			-- add an empty count!
-			print("NOT IMPLEMENTED")
+			print("NOT IMPLEMENTED") -- FIX THIS
 		elseif get_computer_type() == "turtle" and input_lower == "addcurritem" then
 			-- add the item that's in the current slot, and ask how much of it
 			if turtle.getItemCount() == 0 then
 				print("No item to add")  -- it's possible you want to add an empty item but idk...
 			else
 				local item_t = turtle.getItemDetail()
+				local item_key = get_item_key(item_t)
+				item_t.key = item_key
 				print("Enter item count, enter nothing to cancel")
 				local count = read()
 				if #count > 0 then
@@ -223,6 +240,13 @@ function slow_custom_command_entry()
 		elseif input_lower == "cancel" or input_lower == "quit" then
 			return
 		elseif input_lower == "send" then
+			if fetch then
+				-- fetch all the items! Yay! -- item_key, count, exact_number = false
+				for i, v in ipairs(packet.data.items) do
+					fetch_items_from_random_storage(v.key, v.count, false) -- don't require the exact number that's stupid.
+				end
+				print("Fetched all items if possible")
+			end
 			broadcast_including_self(packet)
 			print("Sent!")
 			return
@@ -261,7 +285,12 @@ function set_verbose_network_command(lower_command, command, rest)
 			-- parse the next word for the value
 			local val_text, rest = get_next_word(rest)
 			if val_text ~= nil then
-				val = string.match(string.lower(val_text), "t") -- if it has a y in it it's true
+				val = string.find(string.lower(val_text), "t") -- if it has a t in it it's true
+				if val then
+					val = true -- clean it up somewhat
+				else
+					val = false
+				end
 				rednet.send(id, {packet = "set_verbose_setting", data = {value = val}}, network_prefix)
 			else
 				print("Error parsing true/false text")
@@ -288,6 +317,18 @@ end
 function toggle_verbose_command(lower_command, command, rest)
 	verbose = not verbose
 	print("Set verbose to " .. verbose)
+end
+
+function get_random_storage_node()
+	local all_nodes = {}
+	for id, _ in pairs(storage_nodes) do
+		all_nodes[#all_nodes + 1] = id
+	end
+	if #all_nodes == 0 then
+		return -1
+	else
+		return all_nodes[math.random(#all_nodes)]
+	end
 end
 
 function reboot_network_command(lower_command, command, rest)
@@ -368,6 +409,19 @@ function display_knowledge(lower_command, command, rest)
 	print("Number of display names: " .. count_display_names())
 end
 
+function fetch_items_from_random_storage(item_key, count, exact_number)
+	local data = {item = {key = item_key, count = count, exact_number = exact_number}, requesting_computer = os.getComputerID()}
+	local packet = {packet = "fetch_items", data = data}
+	-- I don't have a good way to handle multiple storage systems at once so for now I'll just send it to one of them I guess? welp... FIX THIS
+	if #storage_nodes == 0 then
+		print("ERROR, no known storage nodes")
+	else
+		local node_picked = get_random_storage_node()
+		print("Sending request to storagemaster at id "..node_picked)
+		rednet.send(node_picked, packet, network_prefix)
+	end
+end
+
 function count_display_names()
 	-- simply counts and returns the number of display names to get an idea the size of the info tables
 	local size = 0
@@ -413,7 +467,7 @@ function item_key_to_item_table(item_key)
 	if damage == nil or name == nil then
 		return nil
 	end
-	return {name = name, damage = damage}
+	return {name = name, damage = damage, key = item_key}
 end
 
 function item_name_to_keys(item_name)

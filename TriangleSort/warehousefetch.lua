@@ -291,7 +291,7 @@ end
 function pathfindToFacing(goalx, goaly, goalz, goalf)
 	pathfindTo(goalx, goaly, goalz)
 	-- then turn to face the correct direction!
-	turnToFacing(goalF)
+	turnToFacing(goalf)
 end
 
 function pathfindTo(goalx, goaly, goalz)
@@ -318,7 +318,7 @@ end
 
 function turnToFacing(goalF)
 	-- turn to face this direction!
-	if (goalf == "up" or goalf == "down" or goalf == 4 or goalf == 5) then
+	if (goalF == "up" or goalF == "down" or goalF == 4 or goalF == 5) then
 		return -- you're always facing up and down so ignore that
 	end
 	if (goalF == 0 and facing == 3) then

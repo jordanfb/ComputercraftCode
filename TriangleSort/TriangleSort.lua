@@ -891,7 +891,9 @@ end
 function receive_rednet_input()
 	-- this function is used by the parallel api to manage the rednet side of things
 	while running do
+		print("Rednet input running")
 		local sender_id, message, received_protocol = rednet.receive(network_prefix)
+		print("REcieved rednet input")
 		-- figure out what to do with that message
 		if message.packet == "reboot_network" then
 			-- quit this loop

@@ -296,7 +296,7 @@ end
 
 function pathfindTo(goalx, goaly, goalz)
 	-- move to this position.
-	if (goalz != z) then
+	if (goalz ~= z) then
 		-- move to the vertical path to go up or down levels
 		pathfind2D(1, 1)
 	end

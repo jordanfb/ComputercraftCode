@@ -682,7 +682,6 @@ function startup()
 	load_mission_from_file()
 	-- ZeroPosition() -- don't do this anymore because it's not working and it's not necessary we know where we are
 	initialize_network()
-	connect_to_master()
 end
 
 function output_items()
@@ -846,9 +845,7 @@ end
 function receive_rednet_input()
 	-- this function is used by the parallel api to manage the rednet side of things
 	while true do
-		print("Rednet running")
 		local sender_id, message, received_protocol = rednet.receive(network_prefix)
-		print("Rednet running2")
 		if verbose then
 			print("Recieved rednet input: " .. tostring(message.packet) .. " " .. tostring(received_protocol))
 		end

@@ -660,6 +660,7 @@ data = {
 						local amount_left_to_fetch = v.item.count - data.item.count -- that's how many left to fetch
 
 						-- v.status = "assigned"
+						v.status = "done" -- it'll just delete it now which is fine I think. later I want status though FIX THIS
 
 						-- now tell the turtle to do this! and create another fetch item to deal with the remnants that we weren't able to fetch this time
 						local packet = {packet = "fetch_turtle_assign_mission", data = data}

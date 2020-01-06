@@ -67,6 +67,7 @@ default_destinations = {} -- this is stored in a file and is used for regular op
 custom_destinations = {} -- this is used for crafting items!
 
 item_display_names = {}
+item_data = {} -- this will be item_key to a table of {damageable = true, max_stack_size = 64} etc, and whatever else I end up wanting like whether or not I want to store it.
 display_names_to_keys = {}
 searchable_display_names_to_keys = {}
 
@@ -375,9 +376,11 @@ end
 
 function refresh_all_network(lower_command, command, rest)
 	get_master_id_function()
-	broadcast_including_self({packet = "get_default_destinations"})
-	broadcast_including_self({packet = "get_item_display_names"})
-
+	if not sorting_destination_settings.isMaster then
+		broadcast_including_self({packet = "get_default_destinations"})
+		broadcast_including_self({packet = "get_item_display_names"})
+	end
+	
 	-- refresh storage things
 	request_storage_masters()
 	request_stored_items()
@@ -559,6 +562,7 @@ end
 function load_display_names()
 	-- loads the item display names from the file if it exists
 	item_display_names = {}
+	item_data = {}
 	display_names_to_keys = {}
 	searchable_display_names_to_keys = {}
 	if fs.exists(item_names_path) then
@@ -570,21 +574,23 @@ function load_display_names()
 			if #line > 1 then
 				-- it's not a blank line I guess
 				local t = {}
-				for word in string.gmatch(line, '([^,]+)') do
-					t[#t+1] = word
-				end
-				if #t ~= 3 then
-					print("Error parsing line: '"..line.."' got "..#t.." values")
-				else
-					local dmg = tonumber(t[2]) or t[2] -- if it's not a number I guess we'll just deal???
-					local item = {name = t[1], damage = dmg}
-					item_display_names[get_item_key(item)] = t[3]
-					if display_names_to_keys[t[3]] == nil then
-						display_names_to_keys[t[3]] = {}
-						searchable_display_names_to_keys[remove_spaces(t[3])] = {}
+				local name, dmg, max_stack_size, damageable, display_name = string.match(line, "([^,]+),([^,]+),([^,]+),([^,]+),\"(.+)\"")
+				if name ~= nil then
+					-- found it correctly!
+					dmg = tonumber(dmg) or dmg  -- if it's not a number I guess we'll just deal???
+					max_stack_size = tonumber(max_stack_size) or max_stack_size
+					damageable = string.lower(damageable) == "true"
+					local item = {name = name, damage = dmg}
+					item_display_names[get_item_key(item)] = display_name
+					item_data[get_item_key(item)] = {max_stack_size = max_stack_size, damageable = damageable} -- store the extra info we have!
+					if display_names_to_keys[display_name] == nil then
+						display_names_to_keys[display_name] = {}
+						searchable_display_names_to_keys[remove_spaces(display_name)] = {}
 					end
-					table.insert(display_names_to_keys[t[3]], get_item_key(item))
-					table.insert(searchable_display_names_to_keys[remove_spaces(t[3])], get_item_key(item))
+					table.insert(display_names_to_keys[display_name], get_item_key(item))
+					table.insert(searchable_display_names_to_keys[remove_spaces(display_name)], get_item_key(item))
+				else
+					print("Error parsing line: '"..line .. "'")
 				end
 			end
 			line = f.readLine()
@@ -861,8 +867,11 @@ function initialization()
 	load_settings()
 	initialize_terminal_commands()
 	load_sorting_device_action()
-	load_display_names()
-	load_default_destinations()
+	if sorting_destination_settings.isMaster then
+		-- only load the display and destination files if you're a master. Everyone else will ask you for them.
+		load_display_names()
+		load_default_destinations()
+	end
 	check_if_replace_prefix()
 
 	print("ID: " ..os.getComputerID() .. " - Label: " .. os.getComputerLabel())
@@ -1115,11 +1124,12 @@ function receive_rednet_input()
 		elseif message.packet == "get_item_display_names" then
 			if sorting_destination_settings.isMaster then
 				-- give them your list of display names
-				local packet = {packet = "set_item_display_names", data = item_display_names}
+				local packet = {packet = "set_item_display_names", data = {display_names = item_display_names, item_data = item_data}}
 				rednet.send(sender_id, packet, network_prefix)
 			end
 		elseif message.packet == "set_item_display_names" then
-			item_display_names = message.data
+			item_display_names = message.data.display_names
+			item_data = message.data.item_data
 			display_names_to_keys = {}
 			searchable_display_names_to_keys = {}
 			for k, v in pairs(item_display_names) do
@@ -1137,7 +1147,7 @@ function receive_rednet_input()
 				-- textutils.pagedPrint(textutils.serialise(message))
 				if add_item_name(message.data.item, message.data.name) then
 					-- tell everyone the new names
-					local packet = {packet = "set_item_display_names", data = item_display_names}
+					local packet = {packet = "set_item_display_names", data = {display_names = item_display_names, item_data = item_data}}
 					rednet.broadcast(packet, network_prefix)
 				end
 			end

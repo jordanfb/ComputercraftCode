@@ -108,6 +108,8 @@ local itemsStoredBySlot = {} -- look up what's in what slot, stored by cache ind
 ]]--
 local itemsStored = {} -- look up if we have an item stored and if so, which slots and how much
 
+local item_data = {} -- item_key = {max_stack_size = 64, damageable = true}. You need to fetch this one from the sorting system master!
+
 local fetch_requests = {}
 -- fetch requests numeric_key = {item = {key=item_key, count = 10000, exact_number=true}, requesting_computer = rednet_id, status= "waiting","assigned","done"}
 -- there's no way to get rid of fetch_requests, with the idea that if we no longer need iron ingots for instance it'll get sent back to storage anyways
@@ -403,28 +405,66 @@ function how_much_stored_here(cache_index, item, count)
 	return 0 -- can't store it here!
 end
 
+function ShouldSendToCrypt(item)
+	-- are we trying to store this item? If not, SEND IT TO THE CRYPPTTTTT
+	-- for now don't store any items that are damageable or have a max stack size of 1 since we're assuming those are the tools
+	-- theoretically they could stack, but we don't want to fill our storage too too quickly especially since we're gonna have trouble
+	-- getting rid of them. Err on the side of caution and don't store things that we don't know about. We should send an update to a display
+	-- turtle somewhere saying that we're storing things in the crypt so that we know, as it is we don't really have any way of knowing
+	if master_id == -1 then
+		while master_id == -1 then
+			-- wait because you have no clue what to do
+			print("ERROR! UNABLE TO CONNECT TO MASTER SORTER")
+			sleep(5)
+		end
+		print("Found sorting leader. Sleeping an extra second for the item data")
+		sleep(1)
+	end
+	-- now we arguably have a item list so we should go for it!
+	local i_dat = item_data[item]
+	if i_dat == nil then
+		-- send it to the CRYYYPT
+		-- we don't know what it is but no-one does so play it safe.
+		return true
+	else
+		-- maybe send it to the CRYYSDPPPT
+		-- for now check if it's stackable or takes damage then SEND IT TO THE CRRRRYYYYYYPPPPPPPPPPPTTTT
+		return i_dat.max_stack_size == 1 or i_dat.damageable
+	end
+end
+
 function WhereWillItemsEndUp(item, count)
 	-- figure out where this item will end up
 	local amount_left = count
 	local stored_locations = {}
-	for i = 1, num_fake_caches do
-		-- if it's a real cache, check if we can store in it
-		if is_real_cache(i) then
-			local cache_index = convert_pipe_to_index(i)
-			-- can it fit there? if so, how much?
-			local stored = how_much_stored_here(cache_index, item, amount_left)
-			if (stored > 0) then
-				stored_locations[#stored_locations + 1] = {cache_index = cache_index, count = stored}
-				amount_left = amount_left - stored
-				if amount_left == 0 then
-					-- we've stored it all!
-					break
+	
+	if ShouldSendToCrypt(item) then
+		stored_locations[#stored_locations + 1] = {cache_index = -1, count = count}
+		amount_left = 0
+	end
+
+	if amount_left > 0 then
+		for i = 1, num_fake_caches do
+			-- if it's a real cache, check if we can store in it
+			if is_real_cache(i) then
+				local cache_index = convert_pipe_to_index(i)
+				-- can it fit there? if so, how much?
+				local stored = how_much_stored_here(cache_index, item, amount_left)
+				if (stored > 0) then
+					stored_locations[#stored_locations + 1] = {cache_index = cache_index, count = stored}
+					amount_left = amount_left - stored
+					if amount_left == 0 then
+						-- we've stored it all!
+						break
+					end
 				end
 			end
 		end
 	end
 	if amount_left > 0 then
-		print("MORE LEFT OH NO FIX ERROR") -- FIX this please, this will happen if we run out of caches
+		-- print("MORE LEFT OH NO FIX ERROR") -- FIX this please, this will happen if we run out of caches
+		print("RAN OUT OF CACHE SPACE! STORING "..tostring(amount_left).." ITEMS IN THE CRYPT")
+		stored_locations[#stored_locations + 1] = {cache_index = -1, count = amount_left}
 	end
 	return stored_locations
 end
@@ -452,6 +492,11 @@ function get_items_count_table()
 	return itemsStored
 end
 
+function broadcast_including_self(packet)
+	rednet.broadcast(packet, network_prefix)
+	rednet.send(os.getComputerID(), packet, network_prefix)
+end
+
 function receive_rednet_input()
 	-- this function is used by the parallel api to manage the rednet side of things
 	while running do
@@ -477,6 +522,9 @@ function receive_rednet_input()
 			running = false
 			reboot = false
 			break
+		elseif message.packet == "set_item_display_names"
+			-- then the master is telling us what's up with the display names and item_data!
+			item_data = message.data.item_data
 		elseif message.packet == "get_stored_items" then
 			-- tell that sender what items we have stored and what quantities but strip out the boring stuff.
 			local data = {items = get_items_count_table(), id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
@@ -491,6 +539,8 @@ function receive_rednet_input()
 			rednet.send(sender_id, packet, network_prefix)  -- tell them who I am
 		elseif message.packet == "set_master_id" then
 			master_id = message.data
+			-- also request the item display names and item data!
+			broadcast_including_self({packet = "get_item_display_names"})
 		elseif message.packet == "fetch_items" then
 			-- message.data = {item = {key=item_key, count = 10000, exact_number=false}, requesting_computer = rednet_id}
 			print("Recieved fetch request")
@@ -776,15 +826,23 @@ end
 
 function add_item_to_storage(item_key, item_count)
 	local cache_ids = WhereWillItemsEndUp(item_key, item_count)
+	local amount_not_stored = 0
 	-- now add it to those caches
 	for k, v in ipairs(cache_ids) do
-		-- apply those changes to the stored items!
-		if itemsStoredBySlot[v.cache_index] == nil then
-			itemsStoredBySlot[v.cache_index] = {count = 0, max = cache_sizes[1], item=""} -- made it a default cache FIX
+		if v.cache_index == -1 then
+			-- it's not able to store this one! send it to the crypt!
+			amount_not_stored = amount_not_stored + v.count
+			turtle.dropDown(v.count)
+			print("Sent extra items to crypt")
+		else
+			-- apply those changes to the stored items!
+			if itemsStoredBySlot[v.cache_index] == nil then
+				itemsStoredBySlot[v.cache_index] = {count = 0, max = cache_sizes[1], item=""} -- made it a default cache FIX
+			end
+			itemsStoredBySlot[v.cache_index].item = item_key
+			itemsStoredBySlot[v.cache_index].count = itemsStoredBySlot[v.cache_index].count + v.count
+			print("item: " ..item_key .. " added to cache " .. v.cache_index .. " with count " .. itemsStoredBySlot[v.cache_index].count)
 		end
-		itemsStoredBySlot[v.cache_index].item = item_key
-		itemsStoredBySlot[v.cache_index].count = itemsStoredBySlot[v.cache_index].count + v.count
-		print("item: " ..item_key .. " added to cache " .. v.cache_index .. " with count " .. itemsStoredBySlot[v.cache_index].count)
 	end
 	BuildItemsStoredToSlotTable()
 	send_item_storage_updates(item_key, item_count, itemsStored[item_key].count) -- send an update to computers that are subscribed!
@@ -801,7 +859,7 @@ function sort_current()
 
 	-- if it's in the system somewhere then add it to this
 	add_item_to_storage(item_key, item_count)
-	turtle.dropUp()
+	turtle.dropUp() -- send whatever's not been sent to the crypt to storage!
 	return true
 end
 
@@ -846,10 +904,16 @@ function initialize_network()
 	end
 end
 
+function get_master_id_function()
+	broadcast_including_self({packet = "get_master_id"})
+end
+
 function broadcast_existence()
 	local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
 	local packet = {packet = "add_storage_node", data = data}
 	rednet.broadcast(packet, network_prefix)  -- tell everyone who I am
+	print("Requesting Master ID")
+	get_master_id_function()
 end
 
 function shut_down_network()

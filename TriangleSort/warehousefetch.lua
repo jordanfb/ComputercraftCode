@@ -585,7 +585,7 @@ mission = {
 ]]--
 function load_mission_from_file()
 	-- if you have a mission saved then load it!
-	if not fs.exists(filename) then
+	if not fs.exists(mission_filepath) then
 		-- no mission file! return
 		print("No mission saved")
 		return

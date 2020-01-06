@@ -103,6 +103,7 @@ function initialize_terminal_commands()
 		all_items_stored=slow_print_display_name_item_count_command,
 		toggle_verbose=toggle_verbose_command,
 		set_verbose=set_verbose_network_command,
+		update_storage=update_storage_command,
 		}
 end
 
@@ -349,6 +350,11 @@ end
 
 function update_network_command(lower_command, command, rest)
 	local packet = {packet = "update_network"}
+	broadcast_including_self(packet)
+end
+
+function update_storage_command(lower_command, command, rest)
+	local packet = {packet = "update_storage_network"}
 	broadcast_including_self(packet)
 end
 

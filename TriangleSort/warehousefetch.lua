@@ -613,6 +613,10 @@ function destroy_mission_file()
 	fs.delete(mission_filepath)
 end
 
+function destroy_position_file()
+	fs.delete(position_file_path)
+end
+
 function test_pathfinding()
 	-- for now just pathfind around!
 	print("Testing pathfinding!")
@@ -672,6 +676,7 @@ function kill_self()
 		update_code()
 	end
 	destroy_mission_file()
+	destroy_position_file()
 	-- probably should message the warehousemaster that we're dying but idk...
 	redstone.setOutput("front", true)
 end

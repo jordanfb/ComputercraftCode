@@ -471,7 +471,7 @@ function refuel()
 	while turtle.getFuelLevel() < math.min(goalFuelLevel, turtle.getFuelLimit()) do
 		suck_direction(refuel_coords.f, 1)
 		turtle.refuel()
-		drop_direction(refuel_coords.f, )
+		drop_direction(refuel_coords.f, 1)
 	end
 end
 
@@ -706,7 +706,7 @@ function fetch_items()
 	organize_inventory() -- so there's space to input the items
 	while mission.item.count > 0 do
 		local amount_in_inventory = count_items_of_key(mission.item.key)
-		suck_direction(mission.item.f, mission.item.count)
+		suck_direction(mission.item.f, math.min(mission.item.count, 64))
 		local amount_gathered = count_items_of_key(mission.item.key) - amount_in_inventory
 		mission.item.count = mission.item.count - amount_gathered
 		save_mission_to_file()

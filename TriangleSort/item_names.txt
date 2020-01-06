@@ -1,124 +1,124 @@
-minecraft:dirt,0,Dirt
-minecraft:cobblestone,0,Cobblestone
-minecraft:iron_ore,0,Iron Ore
-minecraft:gold_ore,0,Gold Ore
-thermalfoundation:ore,1,Tin Ore
-thermalfoundation:ore,2,Silver Ore
-thermalfoundation:ore,3,Lead Ore
-minecraft:stone,1,Granite
-minecraft:stone,3,Diorite
-minecraft:stone,5,Andesite
-minecraft:gravel,0,Gravel
-minecraft:obsidian,0,Obsidian
-minecraft:coal,0,Coal
-minecraft:diamond,0,Diamond
-minecraft:redstone,0,Redstone
-minecraft:flint,0,Flint
-minecraft:dye,4,Lapis Lazuli
-thermalfoundation:material,893,Destabilized Clathrate
-thermalfoundation:ore,5,Nickel Ore
-deepresonance:resonating_ore,0,Resonating Ore
-thaumcraft:ore_cinnabar,0,Cinnabar Ore
-actuallyadditions:block_misc,3,Black Quartz Ore
-projectred-core:resource_item,105,Electrotine
-chisel:basalt2,7,Basalt
-biomesoplenty:gem,4,Tanzanite
-chisel:limestone2,7,Limestone
-rustic:slate,0,Slate
-chisel:marble2,7,Marble
-thermalfoundation:material,0,Pulverized Iron
-thermalfoundation:material,66,Pulverized Silver
-thermalfoundation:material,67,Pulverized Lead
-thermalfoundation:material,65,Pulverized Tin
-thermalfoundation:material,1,Pulverized Gold
-thermalfoundation:material,69,Pulverized Nickel
-actuallyadditions:item_misc,5,Black Quartz
-minecraft:iron_ingot,0,Iron Ingot
-thermalfoundation:material,130,Silver Ingot
-thermalfoundation:material,131,Lead Ingot
-thermalfoundation:material,129,Tin Ingot
-minecraft:gold_ingot,0,Gold Ingot
-appliedenergistics2:material,0,Certus Quartz Crystal
-minecraft:gunpowder,0,Gunpowder
-minecraft:ender_pearl,0,Ender Pearl
-minecraft:bone,0,Bone
-thermalfoundation:material,133,Nickel Ingot
-thermalfoundation:material,866,Cinnabar
-minecraft:string,0,String
-extrautils2:redorchid,0,Red Orchid
-draconicevolution:draconium_dust,0,Draconium Dust
-minecraft:carrot,0,Carrot
-minecraft:skull,2,Zombie Head
-actuallyadditions:item_solidified_experience,0,Solidified Experience
-rustic:core_root,0,Core Root
-quark:root_flower,1,Black Sprout
-quark:root_flower,0,Blue Sprout
-quark:root_flower,2,White Sprout
-minecraft:red_mushroom,0,Red Mushroom
-quark:root,0,Cave Root
-xreliquary:mob_ingredient,6,Zombie Heart
-thaumcraft:nugget,10,Rare Earths
-botania:mushroom,0,White Shimmering Mushroom
-thaumcraft:brain,0,Zombie Brain
-fluxnetworks:flux,0,Flux
-extrautils2:ingredients,0,Resonating Redstone Crystal
-minecraft:rotten_flesh,0,Rotten Flesh
-minecraft:slime_ball,0,Slimeball
-minecraft:hardened_clay,0,Terracotta
-thermalfoundation:material,128,Copper Ingot
-minecraft:emerald,0,Emerald
-minecraft:clay_ball,0,Clay
-thermalfoundation:material,64,Pulverized Copper
-xreliquary:mob_ingredient,0,Rib Bone
-minecraft:arrow,0,Arrow
-thermalfoundation:material,70,Pulverized Platinum
-minecraft:dye,15,Bone Meal
-thermalfoundation:ore,4,Aluminum Ore
-minecraft:stone,0,Stone
-minecraft:sand,0,Sand
-minecraft:netherrack,0,Netherrack
-minecraft:stonebrick,0,Stone Bricks
-minecraft:sapling,1,Spruce Sapling
-minecraft:stick,0,Stick
-minecraft:rail,0,Track
-thermalfoundation:ore,0,Copper Ore
-railcraft:ingot,3,Lead Ingot
-minecraft:glowstone_dust,0,Glowstone Dust
-minecraft:skull,0,Skeleton Skull
-minecraft:spider_eye,0,Spider Eye
-minecraft:sugar,0,Sugar
-minecraft:blaze_powder,0,Blaze Powder
-computercraft:peripheral,1,Wireless Modem
-thermalfoundation:material,134,Platinum Ingot
-appliedenergistics2:material,2,Certus Quartz Dust
-enderio:item_material,20,Grains of Infinity
-thaumcraft:amber,0,Amber
-botania:mushroom,5,Lime Shimmering Mushroom
-botania:mushroom,9,Cyan Shimmering Mushroom
-xreliquary:mob_ingredient,3,Catalyzing Gland
-xreliquary:mob_ingredient,4,Slime Pearl
-xreliquary:mob_ingredient,5,Bat Wing
-thaumcraft:crystal_essence,0,Perdito Vis Crystal
-biomesoplenty:mushroom,3,Glowshroom
-natura:overworld_seeds,0,Barley Seeds
-astralsorcery:blockmarble,0,Marble
-astralsorcery:blockmarble,1,Marble Bricks
-astralsorcery:blockmarble,2,Marble Pillar
-astralsorcery:itemcraftingcomponent,0,Aquamarine
-actuallyadditions:block_lamp_powerer,0,Lamp Controller
-actuallyadditions:block_colored_lamp,5,Lime Lamp
-railcraft:cart_work,0,Work Cart
-railcraft:tool_crowbar_seasons,0,Crowbar of Seasons
-thermalfoundation:ore,7,Iridium Ore
-minecraft:log,1,Spruce Wood
-minecraft:planks,1,Spruce Wood Planks
-thermalfoundation:material,68,Pulverized Aluminum
-thermalfoundation:material,71,Pulverized Iridium
-thermalfoundation:material,132,Aluminum Ingot
-thermalfoundation:material,135,Iridium Ingot
-minecraft:glass,0,Glass
-minecraft:cooked_beef,0,Steak
-minecraft:leather,0,Leather
-minecraft:mossy_cobblestone,0,Moss Stone
-minecraft:chest_minecart,0,Chest Cart
-minecraft:pumpkin_seeds,0,Pumpkin Seeds
+minecraft:dirt,0,64,false,"Dirt"
+minecraft:cobblestone,0,64,false,"Cobblestone"
+minecraft:iron_ore,0,64,false,"Iron Ore"
+minecraft:gold_ore,0,64,false,"Gold Ore"
+thermalfoundation:ore,1,64,false,"Tin Ore"
+thermalfoundation:ore,2,64,false,"Silver Ore"
+thermalfoundation:ore,3,64,false,"Lead Ore"
+minecraft:stone,1,64,false,"Granite"
+minecraft:stone,3,64,false,"Diorite"
+minecraft:stone,5,64,false,"Andesite"
+minecraft:gravel,0,64,false,"Gravel"
+minecraft:obsidian,0,64,false,"Obsidian"
+minecraft:coal,0,64,false,"Coal"
+minecraft:diamond,0,64,false,"Diamond"
+minecraft:redstone,0,64,false,"Redstone"
+minecraft:flint,0,64,false,"Flint"
+minecraft:dye,4,64,false,"Lapis Lazuli"
+thermalfoundation:material,893,64,false,"Destabilized Clathrate"
+thermalfoundation:ore,5,64,false,"Nickel Ore"
+deepresonance:resonating_ore,0,64,false,"Resonating Ore"
+thaumcraft:ore_cinnabar,0,64,false,"Cinnabar Ore"
+actuallyadditions:block_misc,3,64,false,"Black Quartz Ore"
+projectred-core:resource_item,105,64,false,"Electrotine"
+chisel:basalt2,7,64,false,"Basalt"
+biomesoplenty:gem,4,64,false,"Tanzanite"
+chisel:limestone2,7,64,false,"Limestone"
+rustic:slate,0,64,false,"Slate"
+chisel:marble2,7,64,false,"Marble"
+thermalfoundation:material,0,64,false,"Pulverized Iron"
+thermalfoundation:material,66,64,false,"Pulverized Silver"
+thermalfoundation:material,67,64,false,"Pulverized Lead"
+thermalfoundation:material,65,64,false,"Pulverized Tin"
+thermalfoundation:material,1,64,false,"Pulverized Gold"
+thermalfoundation:material,69,64,false,"Pulverized Nickel"
+actuallyadditions:item_misc,5,64,false,"Black Quartz"
+minecraft:iron_ingot,0,64,false,"Iron Ingot"
+thermalfoundation:material,130,64,false,"Silver Ingot"
+thermalfoundation:material,131,64,false,"Lead Ingot"
+thermalfoundation:material,129,64,false,"Tin Ingot"
+minecraft:gold_ingot,0,64,false,"Gold Ingot"
+appliedenergistics2:material,0,64,false,"Certus Quartz Crystal"
+minecraft:gunpowder,0,64,false,"Gunpowder"
+minecraft:ender_pearl,0,64,false,"Ender Pearl"
+minecraft:bone,0,64,false,"Bone"
+thermalfoundation:material,133,64,false,"Nickel Ingot"
+thermalfoundation:material,866,64,false,"Cinnabar"
+minecraft:string,0,64,false,"String"
+extrautils2:redorchid,0,64,false,"Red Orchid"
+draconicevolution:draconium_dust,0,64,false,"Draconium Dust"
+minecraft:carrot,0,64,false,"Carrot"
+minecraft:skull,2,64,false,"Zombie Head"
+actuallyadditions:item_solidified_experience,0,64,false,"Solidified Experience"
+rustic:core_root,0,64,false,"Core Root"
+quark:root_flower,1,64,false,"Black Sprout"
+quark:root_flower,0,64,false,"Blue Sprout"
+quark:root_flower,2,64,false,"White Sprout"
+minecraft:red_mushroom,0,64,false,"Red Mushroom"
+quark:root,0,64,false,"Cave Root"
+xreliquary:mob_ingredient,6,64,false,"Zombie Heart"
+thaumcraft:nugget,10,64,false,"Rare Earths"
+botania:mushroom,0,64,false,"White Shimmering Mushroom"
+thaumcraft:brain,0,64,false,"Zombie Brain"
+fluxnetworks:flux,0,64,false,"Flux"
+extrautils2:ingredients,0,64,false,"Resonating Redstone Crystal"
+minecraft:rotten_flesh,0,64,false,"Rotten Flesh"
+minecraft:slime_ball,0,64,false,"Slimeball"
+minecraft:hardened_clay,0,64,false,"Terracotta"
+thermalfoundation:material,128,64,false,"Copper Ingot"
+minecraft:emerald,0,64,false,"Emerald"
+minecraft:clay_ball,0,64,false,"Clay"
+thermalfoundation:material,64,64,false,"Pulverized Copper"
+xreliquary:mob_ingredient,0,64,false,"Rib Bone"
+minecraft:arrow,0,64,false,"Arrow"
+thermalfoundation:material,70,64,false,"Pulverized Platinum"
+minecraft:dye,15,64,false,"Bone Meal"
+thermalfoundation:ore,4,64,false,"Aluminum Ore"
+minecraft:stone,0,64,false,"Stone"
+minecraft:sand,0,64,false,"Sand"
+minecraft:netherrack,0,64,false,"Netherrack"
+minecraft:stonebrick,0,64,false,"Stone Bricks"
+minecraft:sapling,1,64,false,"Spruce Sapling"
+minecraft:stick,0,64,false,"Stick"
+minecraft:rail,0,64,false,"Track"
+thermalfoundation:ore,0,64,false,"Copper Ore"
+railcraft:ingot,3,64,false,"Lead Ingot"
+minecraft:glowstone_dust,0,64,false,"Glowstone Dust"
+minecraft:skull,0,64,false,"Skeleton Skull"
+minecraft:spider_eye,0,64,false,"Spider Eye"
+minecraft:sugar,0,64,false,"Sugar"
+minecraft:blaze_powder,0,64,false,"Blaze Powder"
+computercraft:peripheral,1,64,false,"Wireless Modem"
+thermalfoundation:material,134,64,false,"Platinum Ingot"
+appliedenergistics2:material,2,64,false,"Certus Quartz Dust"
+enderio:item_material,20,64,false,"Grains of Infinity"
+thaumcraft:amber,0,64,false,"Amber"
+botania:mushroom,5,64,false,"Lime Shimmering Mushroom"
+botania:mushroom,9,64,false,"Cyan Shimmering Mushroom"
+xreliquary:mob_ingredient,3,64,false,"Catalyzing Gland"
+xreliquary:mob_ingredient,4,64,false,"Slime Pearl"
+xreliquary:mob_ingredient,5,64,false,"Bat Wing"
+thaumcraft:crystal_essence,0,64,false,"Perdito Vis Crystal"
+biomesoplenty:mushroom,3,64,false,"Glowshroom"
+natura:overworld_seeds,0,64,false,"Barley Seeds"
+astralsorcery:blockmarble,0,64,false,"Marble"
+astralsorcery:blockmarble,1,64,false,"Marble Bricks"
+astralsorcery:blockmarble,2,64,false,"Marble Pillar"
+astralsorcery:itemcraftingcomponent,0,64,false,"Aquamarine"
+actuallyadditions:block_lamp_powerer,0,64,false,"Lamp Controller"
+actuallyadditions:block_colored_lamp,5,64,false,"Lime Lamp"
+railcraft:cart_work,0,64,false,"Work Cart"
+railcraft:tool_crowbar_seasons,0,64,false,"Crowbar of Seasons"
+thermalfoundation:ore,7,64,false,"Iridium Ore"
+minecraft:log,1,64,false,"Spruce Wood"
+minecraft:planks,1,64,false,"Spruce Wood Planks"
+thermalfoundation:material,68,64,false,"Pulverized Aluminum"
+thermalfoundation:material,71,64,false,"Pulverized Iridium"
+thermalfoundation:material,132,64,false,"Aluminum Ingot"
+thermalfoundation:material,135,64,false,"Iridium Ingot"
+minecraft:glass,0,64,false,"Glass"
+minecraft:cooked_beef,0,64,false,"Steak"
+minecraft:leather,0,64,false,"Leather"
+minecraft:mossy_cobblestone,0,64,false,"Moss Stone"
+minecraft:chest_minecart,0,64,false,"Chest Cart"
+minecraft:pumpkin_seeds,0,64,false,"Pumpkin Seeds"

@@ -598,7 +598,7 @@ function load_mission_from_file()
 	end
 	-- now set our mission table to be this table probably?
 	mission = t
-	parse_mission_variables
+	parse_mission_variables()
 end
 
 function save_mission_to_file()

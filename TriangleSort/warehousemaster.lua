@@ -505,6 +505,7 @@ function receive_rednet_input()
 		elseif message.packet == "fetch_turtle_request_mission" then
 			-- a fetch turtle is requesting its mission. Assign it to a mission or tell it to return if there are no missions.
 			assign_fetch_turtle(sender_id)
+			updateTurtleSpawning()
 		elseif message.packet == "update_storage_network" then
 			-- go through all the turtles and tell them to update when they get released!
 			for k, v in pairs(fetch_bot_status) do
@@ -609,6 +610,7 @@ function assign_fetch_turtle(rednet_id)
 		if v.status == "waiting" then
 			-- check if we have the items to return!
 			-- if we have the items then spawn a turtle. If we don't have the items and exact_number = false then we delete this request.
+			print("Found possible waiting mission")
 			if v.item == nil or v.item.count == nil or v.item.count <= 0 then
 				-- skip it! it's a done or a bad thing!
 				-- fetching_requests_to_remove[#fetching_requests_to_remove + 1] = i
@@ -616,6 +618,7 @@ function assign_fetch_turtle(rednet_id)
 				-- if there are positive items requested and we have some of its type in the storage system then spawn turtles!
 				local amount_stored = safe_get_item_count(v.item.key)
 				if amount_stored > 0 then
+					print("Storing > 0 of the item")
 					-- here's where we're able to assign it to the turtle!
 					-- send this fetch_request to the turtle along with other data to help it on its way.
 --[[
@@ -630,6 +633,7 @@ data = {
 					-- then add the items coordinates to this!
 					local cache_coords = get_cache_coords(v.item, v.item.count)
 					if cache_coords ~= nil then
+						print("Cache coords is not nil")
 						local data = {position = fetch_bot_start_position,
 									update_after = not fetch_bot_status[rednet_id].updated,
 									min_refuel_level = 1000,
@@ -683,6 +687,7 @@ data = {
 					-- skip it because we don't have it so it's accounted for!
 					-- add it to the list of things to remove
 					-- fetching_requests_to_remove[#fetching_requests_to_remove + 1] = i
+					print("Amount stored is 0")
 				end
 			end
 		end
@@ -701,6 +706,9 @@ data = {
 
 		mission = "die", -- just immediately go die I guess to clear the way :P
 	}
+	local packet = {packet = "fetch_turtle_assign_mission", data = data}
+	rednet.send(rednet_id, packet, network_prefix)
+	fetch_bot_status[rednet_id].mission = data -- assign the current mission
 	return false -- didn't give a good mission
 end
 

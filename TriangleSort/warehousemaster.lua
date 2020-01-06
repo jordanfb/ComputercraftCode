@@ -552,6 +552,7 @@ function get_cache_coords(item_key, amount_requested)
 	local items = itemsStored[item_key]
 	if items == nil then
 		-- we don't have any stored, return nil
+		print("Don't have any of the item somehow")
 		return nil
 	end
 --[[
@@ -584,12 +585,14 @@ function get_cache_coords(item_key, amount_requested)
 	if bestLocation.count <= 1 then
 		-- we don't have enough of the item
 		-- FIX this when we allow clearing caches
+		print("Best location has 1 or fewer items")
 		return nil
 	end
 
 	-- otherwise we have our location! now figure out the coordinates!
 	local location = convert_index_to_physical_coordinates(bestLocation.index)
 	location.index = bestLocation.index
+	print("Found viable location")
 	return location
 end
 

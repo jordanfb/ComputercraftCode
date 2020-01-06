@@ -620,7 +620,7 @@ function assign_fetch_turtle(rednet_id)
 					-- send this fetch_request to the turtle along with other data to help it on its way.
 --[[
 data = {
-		x = 1, y = 1, z = 1, f = 1, mission = "fetch", item = {x=4, y=5, z=8, f="up", key="minecraft:stone-0", count = 128},
+		position = {x = 1, y = 1, z = 1, f = 1}, mission = "fetch", item = {x=4, y=5, z=8, f="up", key="minecraft:stone-0", count = 128},
 		min_refuel_level = 1000, refuel_to_level = 5000
 		update_after = false,
 		refuel_coords = {x = 100, y = 100, z = 100, f = "down"},

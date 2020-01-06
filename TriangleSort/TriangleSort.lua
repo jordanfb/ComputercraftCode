@@ -1288,7 +1288,12 @@ function drop_custom_direction(custom)
 		local to_deliver = item_table.count
 		local delivered = 0
 		local item_key = get_item_key(item_table)
-		for i = 1, 16 do
+		for i = 2, 17 do
+			if i == 17 then
+				i = 1 -- this is so that we deal with custom destinations the nice way and stay organized!
+				-- theoretically this should work fine, I tested it in pure lua, but I haven't tested it in computercraft so hopefully
+				-- it won't infinite loop. If it does we can simply add a break statement at the end to exit if i == 1
+			end
 			if turtle.getItemCount(i) > 0 then
 				local i_item_key = get_item_key(turtle.getItemDetail(i))
 				if i_item_key == item_key then

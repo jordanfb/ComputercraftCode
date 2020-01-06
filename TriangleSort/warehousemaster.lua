@@ -508,6 +508,7 @@ function receive_rednet_input()
 			updateTurtleSpawning()
 		elseif message.packet == "update_storage_network" then
 			-- go through all the turtles and tell them to update when they get released!
+			print("Updating fetch bots")
 			for k, v in pairs(fetch_bot_status) do
 				v.updated = false
 			end
@@ -657,9 +658,9 @@ data = {
 
 						-- now tell the turtle to do this! and create another fetch item to deal with the remnants that we weren't able to fetch this time
 						local packet = {packet = "fetch_turtle_assign_mission", data = data}
-						-- rednet.send(rednet_id, packet, network_prefix)
-						rednet.broadcast(packet, network_prefix)
+						rednet.send(rednet_id, packet, network_prefix)
 						-- print("Sent to " .. tostring(rednet_id))
+						fetch_bot_status[rednet_id].updated = true -- you told them to update!
 						fetch_bot_status[rednet_id].mission = data -- assign the current mission
 						-- subtract the items that we're fetching from the items stored
 						-- FIX to allow for emptying caches!
@@ -709,8 +710,8 @@ data = {
 		mission = "die", -- just immediately go die I guess to clear the way :P
 	}
 	local packet = {packet = "fetch_turtle_assign_mission", data = data}
-	-- rednet.send(rednet_id, packet, network_prefix)
-	rednet.broadcast(packet, network_prefix)
+	rednet.send(rednet_id, packet, network_prefix)
+	fetch_bot_status[rednet_id].updated = true -- you told them to update!
 	fetch_bot_status[rednet_id].mission = data -- assign the current mission
 	save_fetch_status()
 	return false -- didn't give a good mission

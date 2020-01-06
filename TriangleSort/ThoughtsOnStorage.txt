@@ -178,3 +178,74 @@ Maybe that's the strategy, although it's less cool looking I think? The amazon w
 I think the coolest would be the amazon warehouse with a bunch of caches, then we can lock the caches so they never run dry which is good. We know the order the pipes prioritize them in so we know where the items are and then we can be happy enough. Honestly I think we'll always have to assume that there are empty caches in the warehouse, and maybe have to deal with being able to upgrade certain caches? I'm not sure the best way to upgrade except manually saying we've upgraded a cache.
 
 How will refueling work? We can use the lava bucket method and always generate lava for it, that's probably the best route, because then we don't have to worry about keeping coal or wood or whatever.
+
+
+
+
+Crafttweaker has a command to dump recipes and item names!
+
+/ct recipes -- dumps recipes, duh
+/ct names display unloc maxstack maxuse maxdamage rarity repaircost damageable repairable creativetabs enchantability burntime
+-- dumps a ton of things including the display name!! Yesssss.
+/ct oredict -- dumps a category and then everything that falls into that category
+/ct foods -- is cool, shows saturation and food gained and such, but not necessary at all.
+/ct blocks
+
+-- I want to dump and parse names, then recipes, then blocks? Maybe oredict too, depending on the recipe parsing
+
+The order I went for was
+/ct recipes
+/ct recipes furnace
+/ct names display unloc maxstack maxuse maxdamage rarity repaircost damageable repairable creativetabs enchantability burntime
+/ct blocks
+/ct oredict
+
+Here's what the log dumps look like:
+
+Recipes:
+recipes.addShapeless("buildcrafttransport:pipe_stone_power_brown", <buildcrafttransport:pipe_stone_power:13>, [<buildcrafttransport:pipe_stone_item:13>, <ore:dustRedstone>]);
+recipes.addShaped("extratrees:maclura_fences", <extratrees:fences.1:9> * 3, [[<extratrees:planks.1:9>, <ore:stickWood>, <extratrees:planks.1:9>], [<extratrees:planks.1:9>, <ore:stickWood>, <extratrees:planks.1:9>]]);
+recipes.addShapeless("railcraft:track_kit#6$1", <railcraft:track_kit:6>.withTag({railcraft: {kit: "railcraft_disembarking"}}) * 4, [<ore:plankWood>, <railcraft:track_parts:*>, <minecraft:stone_pressure_plate:*>, <minecraft:lead:*>, <minecraft:redstone:*>]);
+recipes.addShaped("botania:livingwood0slab_0", <botania:livingwood0slab> * 6, [[<botania:livingwood>, <botania:livingwood>, <botania:livingwood>]]);
+recipes.addShaped("darkutils:ender_hopper", <darkutils:ender_hopper>, [[null, <darkutils:material:1>, null], [<ore:obsidian>, <minecraft:hopper:*>, <ore:obsidian>]]);
+recipes.addShaped("ironchest:shulker/yellow/gold/iron_gold_shulker_box", <ironchest:iron_shulker_box_yellow:1>, [[<ore:ingotGold>, <ore:ingotGold>, <ore:ingotGold>], [<ore:ingotGold>, <ironchest:iron_shulker_box_yellow>, <ore:ingotGold>], [<ore:ingotGold>, <ore:ingotGold>, <ore:ingotGold>]]);
+recipes.addShaped("rustic:olive_table", <rustic:table_olive> * 2, [[<rustic:planks>, <rustic:planks>, <rustic:planks>], [<minecraft:stick>, null, <minecraft:stick>]]);
+
+
+further examples:
+it looks like we do in fact need to parse the ore dictionary
+recipes.addShaped("minecraft:redstone_torch", <minecraft:redstone_torch>, [[<ore:dustRedstone>], [<ore:stickWood>]]);
+recipes.addShaped("minecraft:golden_pickaxe", <minecraft:golden_pickaxe>, [[<ore:ingotGold>, <ore:ingotGold>, <ore:ingotGold>], [null, <ore:stickWood>, null], [null, <ore:stickWood>, null]]);
+
+
+
+Furnace Recipes:
+furnace.addRecipe(<biomesoplenty:gem:7>, <biomesoplenty:gem_ore:7>, 1.000000)
+furnace.addRecipe(<minecraft:coal:1>, <extratrees:logs.3:*>, 0.150000)
+furnace.addRecipe(<botany:ceramic:50>.withTag({meta: 50}), <botany:clay:50>, 0.000000)
+furnace.addRecipe(<thermalfoundation:material:135>, <thermalfoundation:ore:7>, 1.200000)
+furnace.addRecipe(<thermalfoundation:material:193> * 3, <railcraft:ore_metal_poor:3>, 0.300000)
+furnace.addRecipe(<actuallyadditions:item_misc:22>, <actuallyadditions:item_misc:21>, 1.000000)
+furnace.addRecipe(<minecraft:gold_ingot>, <immersiveengineering:metal:19>, 0.000000)
+furnace.addRecipe(<enderio:item_alloy_ingot:7>, <enderio:item_material:74>, 0.000000)
+
+
+List of all registered Items:
+"REGISTRY_NAME","DISPLAY_NAME","UNLOCALIZED","MAX_STACK_SIZE","MAX_ITEM_USE_DURATION","MAX_ITEM_DAMAGE","RARITY","REPAIR_COST","DAMAGEABLE","REPAIRABLE","CREATIVE_TABS","ENCHANTABILITY","BURN_TIME"
+"<actuallyadditions:battery_bauble>.withTag({Energy: 200000})","Single Battery","item.actuallyadditions.item_battery","1","0","0","Rare","0","false","false","[actuallybaubles]","0","0"
+"<actuallyadditions:battery_bauble>.withTag({Energy: 0})","Single Battery","item.actuallyadditions.item_battery","1","0","0","Rare","0","false","false","[actuallybaubles]","0","0"
+"<actuallyadditions:battery_double_bauble>.withTag({Energy: 350000})","Double Battery","item.actuallyadditions.item_battery_double","1","0","0","Rare","0","false","false","[actuallybaubles]","0","0"
+"<actuallyadditions:battery_double_bauble>.withTag({Energy: 0})","Double Battery","item.actuallyadditions.item_battery_double","1","0","0","Rare","0","false","false","[actuallybaubles]","0","0"
+
+
+Blocks:
+<block:actuallyadditions:block_atomic_reconstructor>, Atomic Reconstructor
+<block:actuallyadditions:block_battery_box>, Battery Box
+
+
+-- then straight into ore dictionary entries
+Ore entries for <ore:logWood> :
+-<minecraft:log:*>
+-<minecraft:log2:*>
+-<forestry:logs.0:*>
+-<forestry:logs.1:*>

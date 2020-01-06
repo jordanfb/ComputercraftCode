@@ -660,11 +660,12 @@ data = {
 						local amount_left_to_fetch = v.item.count - data.item.count -- that's how many left to fetch
 
 						-- v.status = "assigned"
-						v.status = "done" -- it'll just delete it now which is fine I think. later I want status though FIX THIS
+						-- v.status = "done" -- it'll just delete it now which is fine I think. later I want status though FIX THIS
 
 						-- now tell the turtle to do this! and create another fetch item to deal with the remnants that we weren't able to fetch this time
 						local packet = {packet = "fetch_turtle_assign_mission", data = data}
-						rednet.send(rednet_id, packet, network_prefix)
+						-- rednet.send(rednet_id, packet, network_prefix)
+						rednet.broadcast(packet, network_prefix)
 						print("Sent to " .. tostring(rednet_id))
 						fetch_bot_status[rednet_id].mission = data -- assign the current mission
 						-- subtract the items that we're fetching from the items stored
@@ -716,7 +717,9 @@ data = {
 		mission = "die", -- just immediately go die I guess to clear the way :P
 	}
 	local packet = {packet = "fetch_turtle_assign_mission", data = data}
-	rednet.send(rednet_id, packet, network_prefix)
+	-- rednet.send(rednet_id, packet, network_prefix)
+	rednet.broadcast(packet, network_prefix)
+	print("Told it to die!")
 	fetch_bot_status[rednet_id].mission = data -- assign the current mission
 	save_fetch_status()
 	return false -- didn't give a good mission

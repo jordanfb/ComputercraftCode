@@ -797,6 +797,7 @@ function handle_mission()
 			-- go get items
 			fetch_items()
 		end
+		sleep(1)
 	end
 end
 
@@ -845,7 +846,9 @@ end
 function receive_rednet_input()
 	-- this function is used by the parallel api to manage the rednet side of things
 	while true do
+		print("Rednet running")
 		local sender_id, message, received_protocol = rednet.receive(network_prefix)
+		print("Rednet running2")
 		if verbose then
 			print("Recieved rednet input: " .. tostring(message.packet) .. " " .. tostring(received_protocol))
 		end

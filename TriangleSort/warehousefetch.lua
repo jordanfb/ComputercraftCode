@@ -108,7 +108,7 @@ local mission = {}
 
 readyForService = false
 
-local verbose = true
+local verbose = false
 
 
 -- if we don't get told where they are these are the defaults
@@ -731,9 +731,12 @@ function count_items_of_key(item_key)
 	-- need to figure out how many items you have of the type
 	local count = 0
 	for i = 1, 16 do
-		local i_item_key = get_item_key(turtle.getItemDetail(i))
-		if i_item_key == item_key then
-			count = count + turtle.getItemCount(i)
+		local detail = turtle.getItemDetail(i)
+		if detail ~= nil then
+			local i_item_key = get_item_key(detail)
+			if i_item_key == item_key then
+				count = count + turtle.getItemCount(i)
+			end
 		end
 	end
 	return count

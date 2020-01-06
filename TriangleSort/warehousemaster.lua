@@ -549,11 +549,9 @@ function get_cache_coords(item_key, amount_requested)
 	-- the front of the sorting machine which makes sense to me.
 	-- FIX this will require 1 extra item over the amount requested because we can't handle emptying caches at the moment
 	amount_requested = amount_requested + 1
-	print("Finding cache coords for " .. tostring(item_key))
 	local items = itemsStored[item_key]
 	if items == nil then
 		-- we don't have any stored, return nil
-		print("Don't have any of the item somehow")
 		return nil
 	end
 --[[
@@ -586,14 +584,12 @@ function get_cache_coords(item_key, amount_requested)
 	if bestLocation.count <= 1 then
 		-- we don't have enough of the item
 		-- FIX this when we allow clearing caches
-		print("Best location has 1 or fewer items")
 		return nil
 	end
 
 	-- otherwise we have our location! now figure out the coordinates!
 	local location = convert_index_to_physical_coordinates(bestLocation.index)
 	location.index = bestLocation.index
-	print("Found viable location")
 	return location
 end
 
@@ -614,7 +610,6 @@ function assign_fetch_turtle(rednet_id)
 		if v.status == "waiting" then
 			-- check if we have the items to return!
 			-- if we have the items then spawn a turtle. If we don't have the items and exact_number = false then we delete this request.
-			print("Found possible waiting mission")
 			if v.item == nil or v.item.count == nil or v.item.count <= 0 then
 				-- skip it! it's a done or a bad thing!
 				-- fetching_requests_to_remove[#fetching_requests_to_remove + 1] = i
@@ -622,7 +617,6 @@ function assign_fetch_turtle(rednet_id)
 				-- if there are positive items requested and we have some of its type in the storage system then spawn turtles!
 				local amount_stored = safe_get_item_count(v.item.key)
 				if amount_stored > 0 then
-					print("Storing > 0 of the item")
 					-- here's where we're able to assign it to the turtle!
 					-- send this fetch_request to the turtle along with other data to help it on its way.
 --[[
@@ -637,7 +631,6 @@ data = {
 					-- then add the items coordinates to this!
 					local cache_coords = get_cache_coords(v.item.key, v.item.count)
 					if cache_coords ~= nil then
-						print("Cache coords is not nil")
 						local data = {position = fetch_bot_start_position,
 									update_after = not fetch_bot_status[rednet_id].updated,
 									min_refuel_level = 1000,
@@ -660,13 +653,13 @@ data = {
 						local amount_left_to_fetch = v.item.count - data.item.count -- that's how many left to fetch
 
 						-- v.status = "assigned"
-						-- v.status = "done" -- it'll just delete it now which is fine I think. later I want status though FIX THIS
+						v.status = "done" -- it'll just delete it now which is fine I think. later I want status though FIX THIS
 
 						-- now tell the turtle to do this! and create another fetch item to deal with the remnants that we weren't able to fetch this time
 						local packet = {packet = "fetch_turtle_assign_mission", data = data}
 						-- rednet.send(rednet_id, packet, network_prefix)
 						rednet.broadcast(packet, network_prefix)
-						print("Sent to " .. tostring(rednet_id))
+						-- print("Sent to " .. tostring(rednet_id))
 						fetch_bot_status[rednet_id].mission = data -- assign the current mission
 						-- subtract the items that we're fetching from the items stored
 						-- FIX to allow for emptying caches!
@@ -697,7 +690,6 @@ data = {
 					-- skip it because we don't have it so it's accounted for!
 					-- add it to the list of things to remove
 					-- fetching_requests_to_remove[#fetching_requests_to_remove + 1] = i
-					print("Amount stored is 0")
 				end
 			end
 		end
@@ -719,7 +711,6 @@ data = {
 	local packet = {packet = "fetch_turtle_assign_mission", data = data}
 	-- rednet.send(rednet_id, packet, network_prefix)
 	rednet.broadcast(packet, network_prefix)
-	print("Told it to die!")
 	fetch_bot_status[rednet_id].mission = data -- assign the current mission
 	save_fetch_status()
 	return false -- didn't give a good mission

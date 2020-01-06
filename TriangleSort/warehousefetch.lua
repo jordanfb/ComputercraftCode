@@ -489,7 +489,7 @@ function load_settings()
 		print("Entering Initial Configuration")
 		-- copy over the startup file
 		fs.delete("/startup.lua")
-		fs.copy("ComputercraftCode/TriangleSort/wareshousefetchstartup.lua", "/startup.lua")
+		fs.copy("ComputercraftCode/TriangleSort/warehousefetchstartup.lua", "/startup.lua")
 		print("Copied over startup file")
 
 		save_settings()
@@ -650,7 +650,7 @@ end
 function update_code()
 	shell.run("github clone jordanfb/ComputercraftCode")
 	fs.delete("/startup.lua")
-	fs.copy("ComputercraftCode/TriangleSort/wareshousefetchstartup.lua", "/startup.lua")
+	fs.copy("ComputercraftCode/TriangleSort/warehousefetchstartup.lua", "/startup.lua")
 end
 
 function kill_self()

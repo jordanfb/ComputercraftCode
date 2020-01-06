@@ -659,9 +659,12 @@ data = {
 						-- run into the problem of race conditions. I'll have to FIX it later
 						local amount_left_to_fetch = v.item.count - data.item.count -- that's how many left to fetch
 
+						-- v.status = "assigned"
+
 						-- now tell the turtle to do this! and create another fetch item to deal with the remnants that we weren't able to fetch this time
 						local packet = {packet = "fetch_turtle_assign_mission", data = data}
 						rednet.send(rednet_id, packet, network_prefix)
+						print("Sent to " .. tostring(rednet_id))
 						fetch_bot_status[rednet_id].mission = data -- assign the current mission
 						-- subtract the items that we're fetching from the items stored
 						-- FIX to allow for emptying caches!
@@ -678,6 +681,7 @@ data = {
 						-- save_fetch_status()
 
 						if amount_left_to_fetch > 0 then
+							print("Creating secondary fetch request to deal with large request")
 							-- create another fetching request that asks for the rest and insert it into the table right after this current element so it's prioritized
 							-- {item = {key=item_key, count = 10000, exact_number=true}, requesting_computer = rednet_id, status= "waiting","assigned","done"}
 							local new_request = {item = {key = v.item.key, count = amount_left_to_fetch, exact_number = v.item.exact_number}, requesting_computer = v.requesting_computer, status = "waiting"}

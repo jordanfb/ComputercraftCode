@@ -844,8 +844,8 @@ end
 
 function receive_rednet_input()
 	-- this function is used by the parallel api to manage the rednet side of things
-	while running do
-		local sender_id, message, received_protocol = rednet.receive()
+	while true do
+		local sender_id, message, received_protocol = rednet.receive(network_prefix)
 		if verbose then
 			print("Recieved rednet input: " .. tostring(message.packet) .. " " .. tostring(received_protocol))
 		end

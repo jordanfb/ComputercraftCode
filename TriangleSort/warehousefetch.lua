@@ -108,6 +108,8 @@ local mission = {}
 
 readyForService = false
 
+local verbose = true
+
 
 -- if we don't get told where they are these are the defaults
 local width = 8

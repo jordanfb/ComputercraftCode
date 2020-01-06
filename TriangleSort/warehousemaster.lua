@@ -549,6 +549,7 @@ function get_cache_coords(item_key, amount_requested)
 	-- the front of the sorting machine which makes sense to me.
 	-- FIX this will require 1 extra item over the amount requested because we can't handle emptying caches at the moment
 	amount_requested = amount_requested + 1
+	print("Finding cache coords for " .. tostring(item_key))
 	local items = itemsStored[item_key]
 	if items == nil then
 		-- we don't have any stored, return nil
@@ -634,7 +635,7 @@ data = {
 		}
 ]]--
 					-- then add the items coordinates to this!
-					local cache_coords = get_cache_coords(v.item, v.item.count)
+					local cache_coords = get_cache_coords(v.item.key, v.item.count)
 					if cache_coords ~= nil then
 						print("Cache coords is not nil")
 						local data = {position = fetch_bot_start_position,
@@ -712,6 +713,7 @@ data = {
 	local packet = {packet = "fetch_turtle_assign_mission", data = data}
 	rednet.send(rednet_id, packet, network_prefix)
 	fetch_bot_status[rednet_id].mission = data -- assign the current mission
+	save_fetch_status()
 	return false -- didn't give a good mission
 end
 

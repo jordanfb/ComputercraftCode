@@ -412,7 +412,7 @@ function ShouldSendToCrypt(item)
 	-- getting rid of them. Err on the side of caution and don't store things that we don't know about. We should send an update to a display
 	-- turtle somewhere saying that we're storing things in the crypt so that we know, as it is we don't really have any way of knowing
 	if master_id == -1 then
-		while master_id == -1 then
+		while master_id == -1 do
 			-- wait because you have no clue what to do
 			print("ERROR! UNABLE TO CONNECT TO MASTER SORTER")
 			sleep(5)

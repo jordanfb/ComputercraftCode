@@ -522,8 +522,9 @@ function receive_rednet_input()
 			running = false
 			reboot = false
 			break
-		elseif message.packet == "set_item_display_names"
+		elseif message.packet == "set_item_display_names" then
 			-- then the master is telling us what's up with the display names and item_data!
+			print("Received item data")
 			item_data = message.data.item_data
 		elseif message.packet == "get_stored_items" then
 			-- tell that sender what items we have stored and what quantities but strip out the boring stuff.

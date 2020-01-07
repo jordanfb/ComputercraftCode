@@ -1876,7 +1876,7 @@ function draw_sorting_menu(m, item_list_function, fetch_settings)
 				m.write(tostring(index))
 				m.setCursorPos(5, y+1)
 				m.write(tostring(menu_settings.items[y][1])) -- the display name!
-				m.setCursorPos(menu_settings.width - 5, y+1)
+				m.setCursorPos(fetch_settings.width - 5, y+1)
 				m.write(tostring(menu_settings.items[y][3])) -- the item count!
 			end
 		end

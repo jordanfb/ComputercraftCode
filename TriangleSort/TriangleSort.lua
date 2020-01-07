@@ -1728,7 +1728,7 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 		center_string_coords(m, "Next", side_button_width+middle_button_width+1, fetch_settings.height-1, side_button_width, 1, colors.lightGray, colors.black)
 		-- Destination button (limited to the button width no matter the length of the destination
 		draw_rectangle(m, side_button_width+middle_button_width+1, fetch_settings.height, side_button_width, 1, colors.gray)
-		center_string_coords(m, string.sub(fetch.settings, 1, side_button_width), side_button_width+middle_button_width+1, fetch_settings.height, side_button_width, 1, colors.gray, colors.white)
+		center_string_coords(m, string.sub(fetch_settings.destination, 1, side_button_width), side_button_width+middle_button_width+1, fetch_settings.height, side_button_width, 1, colors.gray, colors.white)
 
 
 		-- then get events! If it's a timer event then probably update and set another timer! If it's a monitor_touch event or a screen touch event then figure out what happens!

@@ -1694,7 +1694,7 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 				local c = "*"
 				if i > 0 then
 					-- get the character from the alphabet!
-					c = string.strsub("ABCDEFGHIJKLMNOPQRSTUVWXYZ", i, i)
+					c = string.sub("ABCDEFGHIJKLMNOPQRSTUVWXYZ", i, i)
 				end
 				if c == filter_character and fetch_settings.width > 26 then
 					m.setBackgroundColor(colors.green)
@@ -1728,7 +1728,7 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 		center_string_coords(m, "Next", side_button_width+middle_button_width+1, fetch_settings.height-1, side_button_width, 1, color.lightGray, color.black)
 		-- Destination button (limited to the button width no matter the length of the destination
 		draw_rectangle(m, side_button_width+middle_button_width+1, fetch_settings.height, side_button_width, 1, color.gray)
-		center_string_coords(m, string.strsub(fetch.settings, 1, side_button_width), side_button_width+middle_button_width+1, fetch_settings.height, side_button_width, 1, color.gray, color.white)
+		center_string_coords(m, string.sub(fetch.settings, 1, side_button_width), side_button_width+middle_button_width+1, fetch_settings.height, side_button_width, 1, color.gray, color.white)
 
 
 		-- then get events! If it's a timer event then probably update and set another timer! If it's a monitor_touch event or a screen touch event then figure out what happens!

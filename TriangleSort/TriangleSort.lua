@@ -1710,25 +1710,25 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 		-- print the buttons on the bottom!
 		-- leftmost buttons!
 		-- prev button
-		draw_rectangle(m, 1, fetch_settings.height-1, side_button_width, 1, color.lightGray)
-		center_string_coords(m, "Prev", 1, fetch_settings.height-1, side_button_width, 1, color.lightGray, color.black)
+		draw_rectangle(m, 1, fetch_settings.height-1, side_button_width, 1, colors.lightGray)
+		center_string_coords(m, "Prev", 1, fetch_settings.height-1, side_button_width, 1, colors.lightGray, colors.black)
 		-- exit button? maybe we don't want it, but we want it for pocket computers...
-		draw_rectangle(m, 1, fetch_settings.height, side_button_width, 1, color.gray)
-		center_string_coords(m, "Exit", 1, fetch_settings.height, side_button_width, 1, color.gray, color.white)
+		draw_rectangle(m, 1, fetch_settings.height, side_button_width, 1, colors.gray)
+		center_string_coords(m, "Exit", 1, fetch_settings.height, side_button_width, 1, colors.gray, colors.white)
 		-- center buttons (alternate colors so they're clearer)
 		-- in system
-		draw_rectangle(m, side_button_width+1, fetch_settings.height-1, side_button_width, 1, color.gray)
-		center_string_coords(m, tostring(fetch_settings.in_system), 1, fetch_settings.height-1, side_button_width, 1, color.gray, color.white)
+		draw_rectangle(m, side_button_width+1, fetch_settings.height-1, side_button_width, 1, colors.gray)
+		center_string_coords(m, tostring(fetch_settings.in_system), 1, fetch_settings.height-1, side_button_width, 1, colors.gray, colors.white)
 		-- refresh? Maybe auto-refresh though, but it works
-		draw_rectangle(m, side_button_width+1, fetch_settings.height, side_button_width, 1, color.lightGray)
-		center_string_coords(m, "Refresh", 1, fetch_settings.height, side_button_width, 1, color.lightGray, color.black)
+		draw_rectangle(m, side_button_width+1, fetch_settings.height, side_button_width, 1, colors.lightGray)
+		center_string_coords(m, "Refresh", 1, fetch_settings.height, side_button_width, 1, colors.lightGray, colors.black)
 		-- right buttons
 		-- next button
-		draw_rectangle(m, side_button_width+middle_button_width+1, fetch_settings.height-1, side_button_width, 1, color.lightGray)
-		center_string_coords(m, "Next", side_button_width+middle_button_width+1, fetch_settings.height-1, side_button_width, 1, color.lightGray, color.black)
+		draw_rectangle(m, side_button_width+middle_button_width+1, fetch_settings.height-1, side_button_width, 1, colors.lightGray)
+		center_string_coords(m, "Next", side_button_width+middle_button_width+1, fetch_settings.height-1, side_button_width, 1, colors.lightGray, colors.black)
 		-- Destination button (limited to the button width no matter the length of the destination
-		draw_rectangle(m, side_button_width+middle_button_width+1, fetch_settings.height, side_button_width, 1, color.gray)
-		center_string_coords(m, string.sub(fetch.settings, 1, side_button_width), side_button_width+middle_button_width+1, fetch_settings.height, side_button_width, 1, color.gray, color.white)
+		draw_rectangle(m, side_button_width+middle_button_width+1, fetch_settings.height, side_button_width, 1, colors.gray)
+		center_string_coords(m, string.sub(fetch.settings, 1, side_button_width), side_button_width+middle_button_width+1, fetch_settings.height, side_button_width, 1, colors.gray, colors.white)
 
 
 		-- then get events! If it's a timer event then probably update and set another timer! If it's a monitor_touch event or a screen touch event then figure out what happens!

@@ -953,8 +953,10 @@ function pairsByKeys(t, f)
 	local i = 0      -- iterator variable
 	local iter = function ()   -- iterator function
 		i = i + 1
-		if a[i] == nil then return nil
-		else return a[i], t[a[i]]
+		if a[i] == nil then
+			return nil
+		else
+			return a[i], t[a[i]]
 		end
 	end
 	return iter
@@ -970,8 +972,10 @@ function itemKeyAlphabeticallyByDisplayName()
 	local iter = function()   -- iterator function
 		i = i + 1
 		-- print(textutils.pagedPrint(textutils.serialise(display_names_to_keys[a[i]])))
-		if a[i] == nil then return nil
-		else return a[i], display_names_to_keys[a[i]][1], safe_get_item_count(display_names_to_keys[a[i]][1]) -- loops over display_name, item_key (which for some reason is in a table?)
+		if a[i] == nil then
+			return nil
+		else
+			return a[i], display_names_to_keys[a[i]][1], safe_get_item_count(display_names_to_keys[a[i]][1]) -- loops over display_name, item_key (which for some reason is in a table?)
 		end
 	end
 	return iter
@@ -986,9 +990,12 @@ function alphabeticalItemKeyBothDirectionsManual()
 	local i = 0      -- iterator variable
 	local iter = function(step)   -- iterator function
 		i = i + step
-		if a[i] == nil then return nil
-		if i < 0 then return nil
-		else return a[i], display_names_to_keys[a[i]][1], safe_get_item_count(display_names_to_keys[a[i]][1]) -- loops over display_name, item_key (which for some reason is in a table?)
+		if i < 0 then
+			return nil
+		elseif a[i] == nil then
+			return nil
+		else
+			return a[i], display_names_to_keys[a[i]][1], safe_get_item_count(display_names_to_keys[a[i]][1]) -- loops over display_name, item_key (which for some reason is in a table?)
 		end
 	end
 	return iter

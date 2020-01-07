@@ -1856,6 +1856,7 @@ function draw_sorting_menu(m, item_list_function, fetch_settings)
 		-- have to sort them all as lowercase too because I don't want case sensitivity to mess things up
 		-- FIX THIS (then add a number choosing screen and then hit send and it's done!) Return this pick to the main display function for it to call the number picker
 		-- loop over the items to display!
+		draw_rectangle(m, 1, 2, fetch_settings.width, fetch_settings.height, colors.white)
 		if #menu_settings.items == 0 and menu_settings.page == 1 then
 			-- we don't have anything matching this query at all
 			m.setCursorPos(1, 2)
@@ -1932,6 +1933,7 @@ function handle_mouse_press_on_sorting_menu(m, x, y, list_of_items, fetch_settin
 			-- refresh!
 			print("Refreshing!")
 			refresh_all_network()
+			menu_settings.item_current_page = -1
 		else
 			-- the destination button!
 			if #all_destinations == 0 then
@@ -1994,6 +1996,7 @@ function handle_mouse_press_on_sorting_menu(m, x, y, list_of_items, fetch_settin
 				menu_settings.page = 1
 			end
 		end
+		menu_settings.item_current_page = -1 -- regenerate the page of items!
 	else
 		-- picked an item probably! Do stuff!
 		print("Picked an item but not implemented yet, sorry!")

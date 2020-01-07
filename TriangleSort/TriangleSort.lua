@@ -1665,6 +1665,7 @@ function display_display()
 		while running do
 			local choice = draw_sorting_menu(m, sorted_items, fetch_settings)
 			-- then go use that choice in a choice menu! Select how many to fetch probably! Magic stuff!
+			sleep(1)
 		end
 	end
 end
@@ -1732,8 +1733,7 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 
 
 		-- then get events! If it's a timer event then probably update and set another timer! If it's a monitor_touch event or a screen touch event then figure out what happens!
-
-
+		sleep(1)
 	end
 end
 

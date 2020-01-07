@@ -1719,10 +1719,10 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 		-- center buttons (alternate colors so they're clearer)
 		-- in system
 		draw_rectangle(m, side_button_width+1, fetch_settings.height-1, middle_button_width, 1, colors.gray)
-		center_string_coords(m, tostring(fetch_settings.in_system), 1, fetch_settings.height-1, middle_button_width, 1, colors.gray, colors.white)
+		center_string_coords(m, tostring(fetch_settings.in_system), side_button_width+1, fetch_settings.height-1, middle_button_width, 1, colors.gray, colors.white)
 		-- refresh? Maybe auto-refresh though, but it works
 		draw_rectangle(m, side_button_width+1, fetch_settings.height, middle_button_width, 1, colors.lightGray)
-		center_string_coords(m, "Refresh", 1, fetch_settings.height, middle_button_width, 1, colors.lightGray, colors.black)
+		center_string_coords(m, "Refresh", side_button_width+1, fetch_settings.height, middle_button_width, 1, colors.lightGray, colors.black)
 		-- right buttons
 		-- next button
 		draw_rectangle(m, side_button_width+middle_button_width+1, fetch_settings.height-1, side_button_width, 1, colors.lightGray)

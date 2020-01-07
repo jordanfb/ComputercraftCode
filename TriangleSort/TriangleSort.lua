@@ -1816,6 +1816,7 @@ function handle_mouse_press_on_sorting_menu(m, x, y, list_of_items, fetch_settin
 		if x <= menu_settings.side_button_width then
 			-- exit button pressed
 			print("Prev button pressed")
+			menu_settings.page = math.max(menu_settings.page - 1, 1) -- can't go below page 1! Unless you can and it wraps? FIX THIS
 		elseif x <= menu_settings.side_button_width + menu_settings.middle_button_width then
 			-- in system requirement changed!
 			if fetch_settings.in_system == "In System" then
@@ -1826,13 +1827,14 @@ function handle_mouse_press_on_sorting_menu(m, x, y, list_of_items, fetch_settin
 		else
 			-- the destination button!
 			print("Next button pressed")
+			menu_settings.page = menu_settings.page + 1
 		end
 	elseif y <= 1 then
 		-- top row of settings! Choose a character!
 		if fetch_settings.width > 26 then
 			-- we have all of the possibilities including *
 			if x < 28 then
-				menu_settings.filter_character = string.sub("*ABCDEFGHIJKLMNOPQRSTUVWXYZ", x+1, x+1)
+				menu_settings.filter_character = string.sub("*ABCDEFGHIJKLMNOPQRSTUVWXYZ", x, x)
 				menu_settings.page = 1
 			else
 				-- we pressed off to the side but that doesn't do anything
@@ -1841,8 +1843,17 @@ function handle_mouse_press_on_sorting_menu(m, x, y, list_of_items, fetch_settin
 			-- we have an error
 			print("Error, monitor width is too small! Please make it larger?")
 		else
-			-- we're missing the current filter, but aside from that we're good.
-			print("Not implemented yet we're working on it!")
+			-- for pocket computers and random screens that are 26 characters wide!
+			local current_x, end_x = string.find("*ABCDEFGHIJKLMNOPQRSTUVWXYZ", menu_settings.filter_character)
+			if current_x <= x then
+				-- adjust it by 1 so that it's avoiding the missing character!
+				menu_settings.filter_character = string.sub("*ABCDEFGHIJKLMNOPQRSTUVWXYZ", x+1, x+1)
+				menu_settings.page = 1
+			else
+				-- otherwise it's before the missing character so just go hog wild
+				menu_settings.filter_character = string.sub("*ABCDEFGHIJKLMNOPQRSTUVWXYZ", x, x)
+				menu_settings.page = 1
+			end
 		end
 	else
 		-- picked an item probably! Do stuff!

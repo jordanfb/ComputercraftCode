@@ -1856,7 +1856,7 @@ function draw_sorting_menu(m, item_list_function, fetch_settings)
 		-- have to sort them all as lowercase too because I don't want case sensitivity to mess things up
 		-- FIX THIS (then add a number choosing screen and then hit send and it's done!) Return this pick to the main display function for it to call the number picker
 		-- loop over the items to display!
-		draw_rectangle(m, 1, 2, fetch_settings.width, fetch_settings.height-3, colors.white)
+		draw_rectangle(m, 1, 2, fetch_settings.width, fetch_settings.height-4, colors.white)
 		if #menu_settings.items == 0 and menu_settings.page == 1 then
 			-- we don't have anything matching this query at all
 			m.setCursorPos(1, 2)
@@ -2006,7 +2006,7 @@ end
 function draw_rectangle(m, x, y, width, height, color)
 	-- draw a rectangle of color here
 	m.setBackgroundColor(color)
-	for j = y, y + height do
+	for j = y, y + height - 1 do -- subtract 1 to include the starting y location
 		m.setCursorPos(x, j)
 		for i = 1, width do
 			m.write(" ")

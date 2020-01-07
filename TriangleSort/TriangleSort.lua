@@ -1718,11 +1718,11 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 		center_string_coords(m, "Exit", 1, fetch_settings.height, side_button_width, 1, colors.gray, colors.white)
 		-- center buttons (alternate colors so they're clearer)
 		-- in system
-		draw_rectangle(m, side_button_width+1, fetch_settings.height-1, side_button_width, 1, colors.gray)
-		center_string_coords(m, tostring(fetch_settings.in_system), 1, fetch_settings.height-1, side_button_width, 1, colors.gray, colors.white)
+		draw_rectangle(m, side_button_width+1, fetch_settings.height-1, middle_button_width, 1, colors.gray)
+		center_string_coords(m, tostring(fetch_settings.in_system), 1, fetch_settings.height-1, middle_button_width, 1, colors.gray, colors.white)
 		-- refresh? Maybe auto-refresh though, but it works
-		draw_rectangle(m, side_button_width+1, fetch_settings.height, side_button_width, 1, colors.lightGray)
-		center_string_coords(m, "Refresh", 1, fetch_settings.height, side_button_width, 1, colors.lightGray, colors.black)
+		draw_rectangle(m, side_button_width+1, fetch_settings.height, middle_button_width, 1, colors.lightGray)
+		center_string_coords(m, "Refresh", 1, fetch_settings.height, middle_button_width, 1, colors.lightGray, colors.black)
 		-- right buttons
 		-- next button
 		draw_rectangle(m, side_button_width+middle_button_width+1, fetch_settings.height-1, side_button_width, 1, colors.lightGray)
@@ -1750,6 +1750,10 @@ end
 
 function center_string_coords(m, s, x, y, width, height, bg_color, text_color)
 	-- write the string in the center of those coordinates
+	m.setBackgroundColor(bg_color)
+	m.setTextColor(text_color)
+	m.setCursorPos(x, math.floor((y+y+height)/2)) -- center vertically. For now I don't care enough about centering horizontally
+	m.write(string.sub(s, 1, width))
 end
 
 function handle_event_sorting_menu()

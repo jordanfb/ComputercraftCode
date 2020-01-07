@@ -81,6 +81,10 @@ running = true
 first_initialization = false -- this is true when the human should initialize things
 edit_destinations = false
 
+-- rednet non-repeat stuff
+local rednet_message_id = 0
+local received_rednet_messages = {}
+
 player_review_items = false -- this is true when it's time for the player to review items
 
 terminal_commands = {}
@@ -298,7 +302,7 @@ function set_verbose_network_command(lower_command, command, rest)
 				else
 					val = false
 				end
-				rednet.send(id, {packet = "set_verbose_setting", data = {value = val}}, network_prefix)
+				send_correct(id, {packet = "set_verbose_setting", data = {value = val}})
 			else
 				print("Error parsing true/false text")
 			end
@@ -312,7 +316,7 @@ end
 
 function quit_self_command(lower_command, command, rest)
 	running = false
-	rednet.send(os.getComputerID(), {packet = "quit_network"}, network_prefix)
+	send_correct(os.getComputerID(), {packet = "quit_network"})
 end
 
 function quit_network_command(lower_command, command, rest)
@@ -346,7 +350,7 @@ function reboot_network_command(lower_command, command, rest)
 end
 
 function update_self_command(lower_command, command, rest)
-	rednet.send(os.getComputerID(), {packet = "update_network"}, network_prefix)
+	send_correct(os.getComputerID(), {packet = "update_network"})
 end
 
 function update_network_command(lower_command, command, rest)
@@ -432,7 +436,7 @@ function fetch_items_from_random_storage(item_key, count, exact_number)
 		print("ERROR, no known storage nodes")
 	else
 		print("Sending request to storagemaster at id "..node_picked)
-		rednet.send(node_picked, packet, network_prefix)
+		send_correct(node_picked, packet)
 	end
 end
 
@@ -446,8 +450,29 @@ function count_display_names()
 end
 
 function broadcast_including_self(packet)
+	broadcast_correct(packet)
+	send_correct(os.getComputerID(), packet)
+end
+
+function broadcast_correct(packet)
+	packet.from = os.getComputerID()
+	packet.to = -1 -- to everyone!
+	packet.id = rednet_message_id
+	rednet_message_id = rednet_message_id + 1
 	rednet.broadcast(packet, network_prefix)
-	rednet.send(os.getComputerID(), packet, network_prefix)
+end
+
+function send_correct(to, packet)
+	packet.from = os.getComputerID()
+	packet.to = to -- to everyone!
+	packet.id = rednet_message_id
+	rednet_message_id = rednet_message_id + 1
+	rednet.send(to, packet, network_prefix)
+end
+
+function broadcast_reset_message_id()
+	local packet = {packet = "reset_message_id"}
+	broadcast_including_self(packet)
 end
 
 function check_if_replace_prefix()
@@ -819,23 +844,6 @@ function shut_down_network()
 	print("Shut down Rednet network")
 end
 
--- function fetch_networking_destinations()
--- 	-- tries to fetch destinations, is also useful when you add new destinations to the network and then reboot
--- 	rednet.broadcast("request_destinations", network_prefix)
--- 	print("Fetching known network destinations")
-
--- 	local network_destinations = {}
--- 	while true do
--- 		local sender_id, message, received_protocol = rednet.receive(network_prefix, 3) -- three second timeout I guess? The issue is others may be waiting as well...
--- 		if sender_id ~= nil then
--- 			-- received something
--- 			print("received destinations from network")
--- 		else
--- 			break
--- 		end
--- 	end
--- end
-
 function determine_forwards()
 	return -- for now we aren't going to turn since this is complicated and can be dealt with later
 
@@ -859,7 +867,7 @@ end
 function get_default_destinations()
 	-- this just asks the master to send us the default destinations
 	local packet = {packet = "get_item_default_destinations"}
-	rednet.broadcast(packet, network_prefix)
+	broadcast_correct(packet)
 end
 
 function initialization()
@@ -878,6 +886,7 @@ function initialization()
 
 	-- initialize_known_destinations() -- not using known destinations at the moment
 	initialize_network()
+	broadcast_reset_message_id() -- tell everyone that we're resetting our message ID so they should delete our old messages
 	-- fetch_networking_destinations() -- see if new destinations have been added to the network. I can't do that nicely here so we're not going to. The issue is everything is running this at the same time so nothing is responding
 	
 	if sorting_computer_type == "sorter" then
@@ -905,7 +914,7 @@ function initialization()
 	if sorting_destination_settings.isMaster then
 		-- give them your list of destinations
 		local packet = {packet = "set_item_default_destinations", data = default_destinations}
-		rednet.broadcast(packet, network_prefix)
+		broadcast_correct(packet)
 	else
 		-- find the list of destinations
 		get_default_destinations()
@@ -976,19 +985,19 @@ function request_stored_items()
 	-- ask all the storage_masters you know to send you their contents
 	packet = {packet = "get_stored_items"}
 	send_to_storage_nodes(packet)
-	-- rednet.broadcast(packet, network_prefix) -- request other connections in the network. Theoretically I should directly send to each of the masters rather than broadcast it but...
+	-- broadcast_correct(packet) -- request other connections in the network. Theoretically I should directly send to each of the masters rather than broadcast it but...
 end
 
 function request_storage_masters()
 	-- send a message to all the storagemasters requesting that they reveal themselves
 	-- This can't use send_to_storage_nodes because we don't know them yet
 	packet = {packet = "get_storage_nodes"}
-	rednet.broadcast(packet, network_prefix)
+	broadcast_correct(packet)
 end
 
 function send_to_storage_nodes(packet)
 	for rednet_id, node in pairs(storage_nodes) do
-		rednet.send(rednet_id, packet, network_prefix)
+		send_correct(rednet_id, packet)
 	end
 end
 
@@ -1011,181 +1020,197 @@ end
 function receive_rednet_input()
 	-- this function is used by the parallel api to manage the rednet side of things
 	while running do
-		local sender_id, message, received_protocol = rednet.receive(network_prefix)
+		local sender_computer_id, message, received_protocol = rednet.receive(network_prefix)
 		if verbose then
 			print("Recieved rednet input: " .. message.packet)
 		end
-		-- figure out what to do with that message
-		if message.packet == "reboot_network" then
-			-- quit this loop
-			running = false
-			reboot = true
-			break
-		elseif message.packet == "update_network" then
-			-- update from github!
-			print("Updating")
-			shell.run("github clone jordanfb/ComputercraftCode")
-			-- copy the startup file into the main place
-			if (settings.get(settings_prefix .. "initialize_startup_on_update", true)) then
-				print("Copying startup file to startup.lua, can be disabled in settings")
-				-- shell.run("copy ComputercraftCode/TriangleSort/sortingstartup.lua /startup.lua")
-				fs.delete("/startup.lua")
-				fs.copy("ComputercraftCode/TriangleSort/sortingstartup.lua", "/startup.lua")
-				print("Copied!")
-			end
-			-- then reboot
-			running = false
-			reboot = true
-			break
-		elseif message.packet == "set_verbose_setting" then
-			verbose = message.data.value
-		elseif message.packet == "sort_unknown_items" then
-			-- tell the main sorter to sort the unknown items!
-			if sorting_computer_type == "sorter" and sorting_destination_settings.isMaster then
-				-- we should also make a remote version of this which sends the information to a PDA but that's not worth it atm.
-				-- now since we're the master sorter we know where Unknown goes? Perhaps we should instead just check if our destinations include Unknown
-				print("Reviewing items. Please do not leave until this is finished or the system will get stuck")
-				player_review_items = true -- tell us to review items now! This will pause everything so hopefully people are smarter than that :P
-			end
-		elseif message.packet == "quit_network" then
-			-- quit this loop
-			running = false
-			reboot = false
-			break
-		elseif message.packet == "get_custom_destinations" then
-			-- tell them what your custom destinations are!
-			if sorting_computer_type == "sorter" then
-				-- only sorters respond to this one
-				local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), destinations = custom_destinations}
-				local packet = {packet = "return_custom_destinations", data = data}
-				rednet.send(sender_id, packet, network_prefix)
-			end
-		elseif message.packet == "return_custom_destinations" then
-			-- someone has told us what their destinations are!
-			if sorting_computer_type == "display" then
-				-- if we're a custom_destination display then update stuff!
-				print("Not handled yet!")
-			end
-		elseif message.packet == "get_sorting_network_connections" then
-			-- a new computer has joined the network, tell it what we are connected to!
-			-- tell them who we are!
-			if sorting_computer_type == "sorter" then
-				-- only sorters respond to this one
-				local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), destinations = sorting_destination_settings.destinations}
-				local packet = {packet = "update_network_connection", data = data}
-				rednet.send(sender_id, packet, network_prefix)
-			end
-		elseif message.packet == "update_network_connection" then
-			connections[message.data.id] = message.data.destinations
-			if sorting_computer_type == "sorter" then
-				print("Finding local connections")
-				find_local_connections()
-			end
-		elseif message.packet == "add_storage_node" then
-			-- add the storage node to the master's list of storage nodes!
-			-- local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
-			if storage_nodes[message.data.rednet_id] == nil then
-				storage_nodes[message.data.rednet_id] = message.data
-			else
-				-- otherwise just update what we know about it? This may not be necessary
-				storage_nodes[message.data.rednet_id].label = message.data.label
-				storage_nodes[message.data.rednet_id].id = message.data.id
-			end
-			if sorting_computer_type == "display" then
-				request_stored_items()
-			end
-			if sorting_computer_type == "display" and display_type == "storageupdateticker" then
-				-- subscribe to item changes so we can print them out!
-				local packet = {packet = "subscribe_to_storage_changes"}
-				rednet.send(sender_id, packet, network_prefix)
-			end
-		elseif message.packet == "send_stored_items" then
-			-- add the items stored to the lists
-			-- data = {items = get_items_count_table(), id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
-			storage_nodes[message.data.rednet_id] = message.data -- it has the items!
-			if sorting_computer_type == "display" then
-				print("Recieved item list")
-			end
-			UpdateStorageCount()
-		elseif message.packet == "storage_change_update" then
-			-- for the update ticker at the very least and possibly more types
-			-- store the item change so we can display it or use it or whatever. The only reason why I have everyone store it is because you
-			-- have to subscribe to this to get it
-			item_storage_updates[#item_storage_updates + 1] = message.data
-		elseif message.packet == "get_master_id" then
-			-- if this is the master then it returns this ID
-			if sorting_destination_settings.isMaster then
-				-- tell them you're the master!
-				local packet = {packet = "set_master_id", data = os.getComputerID()}
-				rednet.send(sender_id, packet, network_prefix)
-			end
-		elseif message.packet == "set_master_id" then
-			master_id = message.data
-		elseif message.packet == "get_item_display_names" then
-			if sorting_destination_settings.isMaster then
-				-- give them your list of display names
-				local packet = {packet = "set_item_display_names", data = {display_names = item_display_names, item_data = item_data}}
-				rednet.send(sender_id, packet, network_prefix)
-			end
-		elseif message.packet == "set_item_display_names" then
-			item_display_names = message.data.display_names
-			item_data = message.data.item_data
-			display_names_to_keys = {}
-			searchable_display_names_to_keys = {}
-			for k, v in pairs(item_display_names) do
-				if display_names_to_keys[v] == nil then
-					display_names_to_keys[v] = {}
-					searchable_display_names_to_keys[remove_spaces(v)] = {}
-				end
-				table.insert(display_names_to_keys[v], k)
-				table.insert(searchable_display_names_to_keys[remove_spaces(v)], k)
-			end
-		elseif message.packet == "set_new_item_display_name" then
-			-- set an individual display name in the master, probably from a pocket computer or a special outside computer monitor idk...
-			if sorting_destination_settings.isMaster then
-				-- this was sent a packet {packet = "set_new_item_display_name", data = {item = {ITEMTABLE}, name=NEWNAME}}
-				-- textutils.pagedPrint(textutils.serialise(message))
-				if add_item_name(message.data.item, message.data.name) then
-					-- tell everyone the new names
-					local packet = {packet = "set_item_display_names", data = {display_names = item_display_names, item_data = item_data}}
-					rednet.broadcast(packet, network_prefix)
-				end
-			end
-		elseif message.packet == "set_new_item_default_destination" then
-			-- set an individual display name in the master, probably from a pocket computer or a special outside computer monitor idk...
-			if sorting_destination_settings.isMaster then
-				-- this was sent a packet {packet = "set_new_item_default_destination", data = {item = {ITEMTABLE}, destination=NEWNAME}}
-				if add_item_default_destination(message.data.item, message.data.destination) then 
-					-- tell everyone the new names
-					local packet = {packet = "set_item_default_destinations", data = default_destinations}
-					rednet.broadcast(packet, network_prefix)
-				end
-			end
-		elseif message.packet == "set_item_default_destinations" then
-			default_destinations = message.data
-		elseif message.packet == "get_item_default_destinations" then
-			if sorting_destination_settings.isMaster then
-				-- give them your list of destinations
-				local packet = {packet = "set_item_default_destinations", data = default_destinations}
-				rednet.send(sender_id, packet, network_prefix)
-			end
-		elseif message.packet == "set_new_item_custom_destination" then
-			-- set a custom direction for crafting/machining something
-			-- packet looks like this:
-			-- {packet = "set_new_item_custom_destination", data = {items = {LIST_OF_ITEMTABLES_WITH_QUANTITIES}, destination=NEWNAME}}
-			-- can include empty item slots, this is the order in which it is fed to the machines in question.
-			-- this will kinda suck for large numbers of items for crafting since it'll clog up the machines but that's okay I guess?
-			-- possibly more information will get sent for crafting things or whatever? We'll see I guess
-			add_item_custom_destination(message.data) -- message.data.items, message.data.destination
+		-- first check if we've already received the message. If so, ignore it!
+		local sender_id = message.from
+		local destination_id = message.to
+		local message_id = message.id
 
-			-- if sorting_destination_settings.isMaster then
-			-- 	-- this was sent a packet {packet = "set_new_item_custom_destination", data = {item = {ITEMTABLE}, destination=NEWNAME}}
-			-- 	if add_item_custom_destination(message.data.items, message.data.destination) then 
-			-- 		-- tell everyone the new names
-			-- 		local packet = {packet = "set_item_default_destinations", data = default_destinations}
-			-- 		rednet.broadcast(packet, network_prefix)
-			-- 	end
-			-- end
+		if (received_rednet_messages[sender_id][message_id] == nil and (destination_id == -1 or destination_id == os.getComputerID())) or message.packet == "reset_message_id" then
+			-- then it's a new message and we should pay attention to it!
+			-- figure out what to do with that message
+			received_rednet_messages[sender_id][message_id] = true -- we've gotten the message so ignore future versions!
+
+			if message.packet == "reboot_network" then
+				-- quit this loop
+				running = false
+				reboot = true
+				break
+			elseif message.packet == "reset_message_id" then
+				-- reset the message ids for that computer
+				received_rednet_messages[sender_id] = {}
+				if verbose then
+					print("Reset rednet messages for "..tostring(sender_id))
+				end
+			elseif message.packet == "update_network" then
+				-- update from github!
+				print("Updating")
+				shell.run("github clone jordanfb/ComputercraftCode")
+				-- copy the startup file into the main place
+				if (settings.get(settings_prefix .. "initialize_startup_on_update", true)) then
+					print("Copying startup file to startup.lua, can be disabled in settings")
+					-- shell.run("copy ComputercraftCode/TriangleSort/sortingstartup.lua /startup.lua")
+					fs.delete("/startup.lua")
+					fs.copy("ComputercraftCode/TriangleSort/sortingstartup.lua", "/startup.lua")
+					print("Copied!")
+				end
+				-- then reboot
+				running = false
+				reboot = true
+				break
+			elseif message.packet == "set_verbose_setting" then
+				verbose = message.data.value
+			elseif message.packet == "sort_unknown_items" then
+				-- tell the main sorter to sort the unknown items!
+				if sorting_computer_type == "sorter" and sorting_destination_settings.isMaster then
+					-- we should also make a remote version of this which sends the information to a PDA but that's not worth it atm.
+					-- now since we're the master sorter we know where Unknown goes? Perhaps we should instead just check if our destinations include Unknown
+					print("Reviewing items. Please do not leave until this is finished or the system will get stuck")
+					player_review_items = true -- tell us to review items now! This will pause everything so hopefully people are smarter than that :P
+				end
+			elseif message.packet == "quit_network" then
+				-- quit this loop
+				running = false
+				reboot = false
+				break
+			elseif message.packet == "get_custom_destinations" then
+				-- tell them what your custom destinations are!
+				if sorting_computer_type == "sorter" then
+					-- only sorters respond to this one
+					local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), destinations = custom_destinations}
+					local packet = {packet = "return_custom_destinations", data = data}
+					send_correct(sender_id, packet)
+				end
+			elseif message.packet == "return_custom_destinations" then
+				-- someone has told us what their destinations are!
+				if sorting_computer_type == "display" then
+					-- if we're a custom_destination display then update stuff!
+					print("Not handled yet!")
+				end
+			elseif message.packet == "get_sorting_network_connections" then
+				-- a new computer has joined the network, tell it what we are connected to!
+				-- tell them who we are!
+				if sorting_computer_type == "sorter" then
+					-- only sorters respond to this one
+					local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), destinations = sorting_destination_settings.destinations}
+					local packet = {packet = "update_network_connection", data = data}
+					send_correct(sender_id, packet)
+				end
+			elseif message.packet == "update_network_connection" then
+				connections[message.data.id] = message.data.destinations
+				if sorting_computer_type == "sorter" then
+					print("Finding local connections")
+					find_local_connections()
+				end
+			elseif message.packet == "add_storage_node" then
+				-- add the storage node to the master's list of storage nodes!
+				-- local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
+				if storage_nodes[message.data.rednet_id] == nil then
+					storage_nodes[message.data.rednet_id] = message.data
+				else
+					-- otherwise just update what we know about it? This may not be necessary
+					storage_nodes[message.data.rednet_id].label = message.data.label
+					storage_nodes[message.data.rednet_id].id = message.data.id
+				end
+				if sorting_computer_type == "display" then
+					request_stored_items()
+				end
+				if sorting_computer_type == "display" and display_type == "storageupdateticker" then
+					-- subscribe to item changes so we can print them out!
+					local packet = {packet = "subscribe_to_storage_changes"}
+					send_correct(sender_id, packet)
+				end
+			elseif message.packet == "send_stored_items" then
+				-- add the items stored to the lists
+				-- data = {items = get_items_count_table(), id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
+				storage_nodes[message.data.rednet_id] = message.data -- it has the items!
+				if sorting_computer_type == "display" then
+					print("Recieved item list")
+				end
+				UpdateStorageCount()
+			elseif message.packet == "storage_change_update" then
+				-- for the update ticker at the very least and possibly more types
+				-- store the item change so we can display it or use it or whatever. The only reason why I have everyone store it is because you
+				-- have to subscribe to this to get it
+				item_storage_updates[#item_storage_updates + 1] = message.data
+			elseif message.packet == "get_master_id" then
+				-- if this is the master then it returns this ID
+				if sorting_destination_settings.isMaster then
+					-- tell them you're the master!
+					local packet = {packet = "set_master_id", data = os.getComputerID()}
+					send_correct(sender_id, packet)
+				end
+			elseif message.packet == "set_master_id" then
+				master_id = message.data
+			elseif message.packet == "get_item_display_names" then
+				if sorting_destination_settings.isMaster then
+					-- give them your list of display names
+					local packet = {packet = "set_item_display_names", data = {display_names = item_display_names, item_data = item_data}}
+					send_correct(sender_id, packet)
+				end
+			elseif message.packet == "set_item_display_names" then
+				item_display_names = message.data.display_names
+				item_data = message.data.item_data
+				display_names_to_keys = {}
+				searchable_display_names_to_keys = {}
+				for k, v in pairs(item_display_names) do
+					if display_names_to_keys[v] == nil then
+						display_names_to_keys[v] = {}
+						searchable_display_names_to_keys[remove_spaces(v)] = {}
+					end
+					table.insert(display_names_to_keys[v], k)
+					table.insert(searchable_display_names_to_keys[remove_spaces(v)], k)
+				end
+			elseif message.packet == "set_new_item_display_name" then
+				-- set an individual display name in the master, probably from a pocket computer or a special outside computer monitor idk...
+				if sorting_destination_settings.isMaster then
+					-- this was sent a packet {packet = "set_new_item_display_name", data = {item = {ITEMTABLE}, name=NEWNAME}}
+					-- textutils.pagedPrint(textutils.serialise(message))
+					if add_item_name(message.data.item, message.data.name) then
+						-- tell everyone the new names
+						local packet = {packet = "set_item_display_names", data = {display_names = item_display_names, item_data = item_data}}
+						broadcast_correct(packet)
+					end
+				end
+			elseif message.packet == "set_new_item_default_destination" then
+				-- set an individual display name in the master, probably from a pocket computer or a special outside computer monitor idk...
+				if sorting_destination_settings.isMaster then
+					-- this was sent a packet {packet = "set_new_item_default_destination", data = {item = {ITEMTABLE}, destination=NEWNAME}}
+					if add_item_default_destination(message.data.item, message.data.destination) then 
+						-- tell everyone the new names
+						local packet = {packet = "set_item_default_destinations", data = default_destinations}
+						broadcast_correct(packet)
+					end
+				end
+			elseif message.packet == "set_item_default_destinations" then
+				default_destinations = message.data
+			elseif message.packet == "get_item_default_destinations" then
+				if sorting_destination_settings.isMaster then
+					-- give them your list of destinations
+					local packet = {packet = "set_item_default_destinations", data = default_destinations}
+					send_correct(sender_id, packet)
+				end
+			elseif message.packet == "set_new_item_custom_destination" then
+				-- set a custom direction for crafting/machining something
+				-- packet looks like this:
+				-- {packet = "set_new_item_custom_destination", data = {items = {LIST_OF_ITEMTABLES_WITH_QUANTITIES}, destination=NEWNAME}}
+				-- can include empty item slots, this is the order in which it is fed to the machines in question.
+				-- this will kinda suck for large numbers of items for crafting since it'll clog up the machines but that's okay I guess?
+				-- possibly more information will get sent for crafting things or whatever? We'll see I guess
+				add_item_custom_destination(message.data) -- message.data.items, message.data.destination
+
+				-- if sorting_destination_settings.isMaster then
+				-- 	-- this was sent a packet {packet = "set_new_item_custom_destination", data = {item = {ITEMTABLE}, destination=NEWNAME}}
+				-- 	if add_item_custom_destination(message.data.items, message.data.destination) then 
+				-- 		-- tell everyone the new names
+				-- 		local packet = {packet = "set_item_default_destinations", data = default_destinations}
+				-- 		broadcast_correct(packet)
+				-- 	end
+				-- end
+			end
 		end
 	end
 end
@@ -1195,15 +1220,15 @@ function connect_to_sorting_network()
 	local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), destinations = sorting_destination_settings.destinations}
 	-- send it out to the sorting network!
 	local packet = {packet = "update_network_connection", data = data}
-	rednet.broadcast(packet, network_prefix)  -- tell them who I am
+	broadcast_correct(packet)  -- tell them who I am
 
 	packet = {packet = "get_sorting_network_connections"}
-	rednet.broadcast(packet, network_prefix) -- request other connections in the network
+	broadcast_correct(packet) -- request other connections in the network
 
 	if sorting_destination_settings.isMaster then
 		-- tell them you're the master!
 		local packet = {packet = "set_master_id", data = os.getComputerID()}
-		rednet.broadcast(packet, network_prefix)
+		broadcast_correct(packet)
 	end
 end
 
@@ -1462,8 +1487,8 @@ function import_unknown()
 					-- set it!
 					-- {packet = "set_new_item_display_name", data = {item = {ITEMTABLE}, name=NEWNAME}}
 					local packet = {packet = "set_new_item_display_name", data={item=item, name=new_name}}
-					rednet.broadcast(packet, network_prefix)
-					rednet.send(os.getComputerID(), packet, network_prefix)
+					broadcast_correct(packet)
+					send_correct(os.getComputerID(), packet)
 					-- that way whatever the master is can have it and we don't have to keep track of it.
 				end
 				local old_destination = default_destinations[item_key]
@@ -1471,8 +1496,8 @@ function import_unknown()
 					-- now figure out what the destination is, then put it in the origin chest!
 					local new_destination = read_non_empty_string("Enter the destination of " .. currDisplayName)
 					local packet = {packet = "set_new_item_default_destination", data = {item=item, destination=new_destination}}
-					rednet.broadcast(packet, network_prefix)
-					rednet.send(os.getComputerID(), packet, network_prefix)
+					broadcast_correct(packet)
+					send_correct(os.getComputerID(), packet)
 				end
 				-- now deal with it!
 				sort_currently_selected() -- hopefully this won't go wrong... welp :P

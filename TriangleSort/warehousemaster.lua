@@ -136,6 +136,10 @@ modem_side = ""
 reboot = false -- this is used to reboot everything after recieving this from the network
 running = true
 
+-- rednet non-repeat stuff
+local rednet_message_id = 0
+local received_rednet_messages = {}
+
 
 function initialize()
 	print("Starting Warehouse Master v0.1")
@@ -493,90 +497,128 @@ function get_items_count_table()
 end
 
 function broadcast_including_self(packet)
+	broadcast_correct(packet)
+	send_correct(os.getComputerID(), packet)
+end
+
+function broadcast_correct(packet)
+	packet.from = os.getComputerID()
+	packet.to = -1 -- to everyone!
+	packet.id = rednet_message_id
+	rednet_message_id = rednet_message_id + 1
 	rednet.broadcast(packet, network_prefix)
-	rednet.send(os.getComputerID(), packet, network_prefix)
+end
+
+function send_correct(to, packet)
+	packet.from = os.getComputerID()
+	packet.to = to -- to everyone!
+	packet.id = rednet_message_id
+	rednet_message_id = rednet_message_id + 1
+	rednet.send(to, packet, network_prefix)
+end
+
+function broadcast_reset_message_id()
+	local packet = {packet = "reset_message_id"}
+	broadcast_including_self(packet)
 end
 
 function receive_rednet_input()
 	-- this function is used by the parallel api to manage the rednet side of things
 	while running do
-		local sender_id, message, received_protocol = rednet.receive(network_prefix)
-		-- figure out what to do with that message
-		if message.packet == "reboot_network" then
-			-- quit this loop
-			running = false
-			reboot = true
-			break
-		elseif message.packet == "update_network" then
-			-- update from github!
-			shell.run("github clone jordanfb/ComputercraftCode")
-			-- copy the startup file into the main place
-			fs.delete("/startup.lua")
-			fs.copy("ComputercraftCode/TriangleSort/warehousemasterstartup.lua", "/startup.lua")
-			-- then reboot
-			running = false
-			reboot = true
-			break
-		elseif message.packet == "quit_network" then
-			-- quit this loop
-			running = false
-			reboot = false
-			break
-		elseif message.packet == "set_item_display_names" then
-			-- then the master is telling us what's up with the display names and item_data!
-			print("Received item data")
-			item_data = message.data.item_data
-		elseif message.packet == "get_stored_items" then
-			-- tell that sender what items we have stored and what quantities but strip out the boring stuff.
-			local data = {items = get_items_count_table(), id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
-			local packet = {packet = "send_stored_items", data = data}
-			rednet.send(sender_id, packet, network_prefix)
-		elseif message.packet == "get_storage_nodes" then
-			-- a new computer has joined the network, tell it what we are connected to!
-			-- tell them who we are!
-			-- tell them that you're a storage master machine!
-			local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
-			local packet = {packet = "add_storage_node", data = data}
-			rednet.send(sender_id, packet, network_prefix)  -- tell them who I am
-		elseif message.packet == "set_master_id" then
-			master_id = message.data
-			-- also request the item display names and item data!
-			broadcast_including_self({packet = "get_item_display_names"})
-		elseif message.packet == "fetch_items" then
-			-- message.data = {item = {key=item_key, count = 10000, exact_number=false}, requesting_computer = rednet_id}
-			print("Recieved fetch request")
-			print("Fetch request for: ")
-			print(message.data.item.key)
-			print(message.data.item.count)
-			message.data.status = "waiting" -- it's not done so make it wait!
-			fetch_requests[#fetch_requests+1] = message.data
-			-- then save it, and also update whether or not we're spawning more turtles!
-			save_fetch_status()
-			updateTurtleSpawning()
-		elseif message.packet == "fetch_turtle_request_mission" then
-			-- a fetch turtle is requesting its mission. Assign it to a mission or tell it to return if there are no missions.
-			assign_fetch_turtle(sender_id)
-			updateTurtleSpawning()
-		elseif message.packet == "update_storage_network" then
-			-- go through all the turtles and tell them to update when they get released!
-			print("Updating fetch bots")
-			for k, v in pairs(fetch_bot_status) do
-				v.updated = false
-			end
-			save_fetch_status()
-		elseif message.packet == "subscribe_to_storage_changes" then
-			-- this is a message so that I can send that computer changes in item storage amounts so we can display them etc.
-			-- it's meant to be used for a ticker etc. that displays storage changes.
-			local already_subscribed = false
-			for i, v in ipairs(subscribed_to_storage_changes) do
-				if v == sender_id then
-					already_subscribed = true
-					break
+		local sender_computer_id, message, received_protocol = rednet.receive(network_prefix)
+		-- first check if we've already received the message. If so, ignore it!
+		local sender_id = message.from
+		local destination_id = message.to
+		local message_id = message.id
+
+		if (received_rednet_messages[sender_id][message_id] == nil and (destination_id == -1 or destination_id == os.getComputerID())) or message.packet == "reset_message_id" then
+			-- then it's a new message and we should pay attention to it!
+			-- figure out what to do with that message
+			received_rednet_messages[sender_id][message_id] = true -- we've gotten the message so ignore future versions!
+
+			-- figure out what to do with that message
+			if message.packet == "reboot_network" then
+				-- quit this loop
+				running = false
+				reboot = true
+				break
+			elseif message.packet == "reset_message_id" then
+				-- reset the message ids for that computer
+				received_rednet_messages[sender_id] = {}
+				if verbose then
+					print("Reset rednet messages for "..tostring(sender_id))
 				end
-			end
-			if not already_subscribed then
-				print("New subscriber to storage changes with id: " .. sender_id)
-				subscribed_to_storage_changes[#subscribed_to_storage_changes + 1] = sender_id -- so we can send it item storage updates!
+			elseif message.packet == "update_network" then
+				-- update from github!
+				shell.run("github clone jordanfb/ComputercraftCode")
+				-- copy the startup file into the main place
+				fs.delete("/startup.lua")
+				fs.copy("ComputercraftCode/TriangleSort/warehousemasterstartup.lua", "/startup.lua")
+				-- then reboot
+				running = false
+				reboot = true
+				break
+			elseif message.packet == "quit_network" then
+				-- quit this loop
+				running = false
+				reboot = false
+				break
+			elseif message.packet == "set_item_display_names" then
+				-- then the master is telling us what's up with the display names and item_data!
+				print("Received item data")
+				item_data = message.data.item_data
+			elseif message.packet == "get_stored_items" then
+				-- tell that sender what items we have stored and what quantities but strip out the boring stuff.
+				local data = {items = get_items_count_table(), id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
+				local packet = {packet = "send_stored_items", data = data}
+				send_correct(sender_id, packet)
+			elseif message.packet == "get_storage_nodes" then
+				-- a new computer has joined the network, tell it what we are connected to!
+				-- tell them who we are!
+				-- tell them that you're a storage master machine!
+				local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
+				local packet = {packet = "add_storage_node", data = data}
+				send_correct(sender_id, packet)  -- tell them who I am
+			elseif message.packet == "set_master_id" then
+				master_id = message.data
+				-- also request the item display names and item data!
+				broadcast_including_self({packet = "get_item_display_names"})
+			elseif message.packet == "fetch_items" then
+				-- message.data = {item = {key=item_key, count = 10000, exact_number=false}, requesting_computer = rednet_id}
+				print("Recieved fetch request")
+				print("Fetch request for: ")
+				print(message.data.item.key)
+				print(message.data.item.count)
+				message.data.status = "waiting" -- it's not done so make it wait!
+				fetch_requests[#fetch_requests+1] = message.data
+				-- then save it, and also update whether or not we're spawning more turtles!
+				save_fetch_status()
+				updateTurtleSpawning()
+			elseif message.packet == "fetch_turtle_request_mission" then
+				-- a fetch turtle is requesting its mission. Assign it to a mission or tell it to return if there are no missions.
+				assign_fetch_turtle(sender_id)
+				updateTurtleSpawning()
+			elseif message.packet == "update_storage_network" then
+				-- go through all the turtles and tell them to update when they get released!
+				print("Updating fetch bots")
+				for k, v in pairs(fetch_bot_status) do
+					v.updated = false
+				end
+				save_fetch_status()
+			elseif message.packet == "subscribe_to_storage_changes" then
+				-- this is a message so that I can send that computer changes in item storage amounts so we can display them etc.
+				-- it's meant to be used for a ticker etc. that displays storage changes.
+				local already_subscribed = false
+				for i, v in ipairs(subscribed_to_storage_changes) do
+					if v == sender_id then
+						already_subscribed = true
+						break
+					end
+				end
+				if not already_subscribed then
+					print("New subscriber to storage changes with id: " .. sender_id)
+					subscribed_to_storage_changes[#subscribed_to_storage_changes + 1] = sender_id -- so we can send it item storage updates!
+				end
 			end
 		end
 	end
@@ -589,7 +631,7 @@ function send_item_storage_updates(item_key, change, total_count)
 	local packet = {packet = "storage_change_update", data = data}
 	for i, id in ipairs(subscribed_to_storage_changes) do
 		-- send it to them
-		rednet.send(id, packet, network_prefix)
+		send_correct(id, packet)
 	end
 end
 
@@ -709,7 +751,7 @@ data = {
 
 						-- now tell the turtle to do this! and create another fetch item to deal with the remnants that we weren't able to fetch this time
 						local packet = {packet = "fetch_turtle_assign_mission", data = data}
-						rednet.send(rednet_id, packet, network_prefix)
+						send_correct(rednet_id, packet)
 						-- print("Sent to " .. tostring(rednet_id))
 						fetch_bot_status[rednet_id].updated = true -- you told them to update!
 						fetch_bot_status[rednet_id].mission = data -- assign the current mission
@@ -761,7 +803,7 @@ data = {
 		mission = "die", -- just immediately go die I guess to clear the way :P
 	}
 	local packet = {packet = "fetch_turtle_assign_mission", data = data}
-	rednet.send(rednet_id, packet, network_prefix)
+	send_correct(rednet_id, packet)
 	fetch_bot_status[rednet_id].updated = true -- you told them to update!
 	fetch_bot_status[rednet_id].mission = data -- assign the current mission
 	save_fetch_status()
@@ -822,7 +864,7 @@ function connect_to_sorting_network()
 	local data = {id = ""..os.getComputerID(), label = os.getComputerLabel()}
 	-- send it out to the sorting network!
 	local packet = {packet = "add_storage_node", data = data}
-	rednet.broadcast(packet, network_prefix)  -- tell them who I am
+	broadcast_correct(packet)  -- tell them who I am
 end
 
 function add_item_to_storage(item_key, item_count)
@@ -903,6 +945,7 @@ function initialize_network()
 			print("Error opening rednet, this will likely cause errors")
 		end
 	end
+
 end
 
 function get_master_id_function()
@@ -912,7 +955,7 @@ end
 function broadcast_existence()
 	local data = {id = ""..os.getComputerID(), label = os.getComputerLabel(), rednet_id = os.getComputerID()}
 	local packet = {packet = "add_storage_node", data = data}
-	rednet.broadcast(packet, network_prefix)  -- tell everyone who I am
+	broadcast_correct(packet)  -- tell everyone who I am
 	print("Requesting Master ID")
 	get_master_id_function()
 end

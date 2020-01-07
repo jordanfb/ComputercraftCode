@@ -119,6 +119,12 @@ local output_coords = {x = width, y = depth, z = 1, f = "down"}
 local refuel_coords = {x = width+1, y = depth, z = 1, f = "down"}
 local die_coords = {x = width+3, y = depth, z = 1, f = 1} -- die coords are currently facing east
 
+-- rednet non-repeat stuff
+local rednet_message_id = 0
+local received_rednet_messages = {}
+
+
+
 
 -- function ZeroPosition()
 -- 	readyForService = false
@@ -477,8 +483,31 @@ function refuel()
 	end
 end
 
+function broadcast_including_self(packet)
+	broadcast_correct(packet)
+	send_correct(os.getComputerID(), packet)
+end
 
+function broadcast_correct(packet)
+	packet.from = os.getComputerID()
+	packet.to = -1 -- to everyone!
+	packet.id = rednet_message_id
+	rednet_message_id = rednet_message_id + 1
+	rednet.broadcast(packet, network_prefix)
+end
 
+function send_correct(to, packet)
+	packet.from = os.getComputerID()
+	packet.to = to -- to everyone!
+	packet.id = rednet_message_id
+	rednet_message_id = rednet_message_id + 1
+	rednet.send(to, packet, network_prefix)
+end
+
+function broadcast_reset_message_id()
+	local packet = {packet = "reset_message_id"}
+	broadcast_including_self(packet)
+end
 
 
 -- additional helper functions
@@ -546,6 +575,7 @@ function initialize_network()
 			print("Error opening rednet, this will likely cause errors")
 		end
 	end
+	-- broadcast_reset_message_id() -- tell everyone that you're new in town -- shouldn't need to do this because it'll tell everyone before it dies?
 end
 
 function connect_to_master()
@@ -569,7 +599,7 @@ end
 function request_mission()
 	print("Requesting mission. Currently broadcasting because unsure what id the master is")
 	local packet = {packet = "fetch_turtle_request_mission"}
-	rednet.broadcast(packet, network_prefix)
+	broadcast_correct(packet)
 end
 
 
@@ -678,6 +708,7 @@ function kill_self()
 	destroy_mission_file()
 	destroy_position_file()
 	-- probably should message the warehousemaster that we're dying but idk...
+	broadcast_reset_message_id() -- tell everyone that you're going away for a long, long time...
 	redstone.setOutput("front", true)
 end
 
@@ -853,17 +884,28 @@ end
 function receive_rednet_input()
 	-- this function is used by the parallel api to manage the rednet side of things
 	while true do
-		local sender_id, message, received_protocol = rednet.receive(network_prefix)
-		if verbose then
-			print("Recieved rednet input: " .. tostring(message.packet) .. " " .. tostring(received_protocol))
-		end
-		-- figure out what to do with that message
-		if message.packet == "fetch_turtle_assign_mission" then
-			-- you've gotten a mission! Yay!
-			print("Recieved mission!")
-			mission = message.data
-			save_mission_to_file()
-			parse_mission_variables()
+		local sender_computer_id, message, received_protocol = rednet.receive(network_prefix)
+		-- first check if we've already received the message. If so, ignore it!
+		local sender_id = message.from
+		local destination_id = message.to
+		local message_id = message.id
+
+		if (received_rednet_messages[sender_id][message_id] == nil and (destination_id == -1 or destination_id == os.getComputerID())) or message.packet == "reset_message_id" then
+			-- then it's a new message and we should pay attention to it!
+			-- figure out what to do with that message
+			received_rednet_messages[sender_id][message_id] = true -- we've gotten the message so ignore future versions!
+
+			if verbose then
+				print("Recieved rednet input: " .. tostring(message.packet) .. " " .. tostring(received_protocol))
+			end
+			-- figure out what to do with that message
+			if message.packet == "fetch_turtle_assign_mission" then
+				-- you've gotten a mission! Yay!
+				print("Recieved mission!")
+				mission = message.data
+				save_mission_to_file()
+				parse_mission_variables()
+			end
 		end
 	end
 end

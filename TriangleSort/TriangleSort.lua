@@ -1770,10 +1770,10 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 			end
 		elseif event == "monitor_touch" then
 			-- deal with the button presses!
-			handle_mouse_press_on_sorting_menu(m, param1, param2, list_of_items, fetch_settings, menu_settings)
+			handle_mouse_press_on_sorting_menu(m, param2, param3, list_of_items, fetch_settings, menu_settings)
 		elseif event == "mouse_click" then
 			-- mouse click! may be useful if we're on a pocket computer etc.
-			handle_mouse_press_on_sorting_menu(m, param1, param2, list_of_items, fetch_settings, menu_settings)
+			handle_mouse_press_on_sorting_menu(m, param2, param3, list_of_items, fetch_settings, menu_settings)
 		end
 		-- ignore the other events for now, but we may want to have it also handle mouse_presses which are basically identical to monitor_touches.
 

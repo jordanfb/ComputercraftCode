@@ -380,7 +380,7 @@ function refresh_all_network(lower_command, command, rest)
 		broadcast_including_self({packet = "get_default_destinations"})
 		broadcast_including_self({packet = "get_item_display_names"})
 	end
-	
+
 	-- refresh storage things
 	request_storage_masters()
 	request_stored_items()
@@ -1403,7 +1403,7 @@ end
 
 function edit_display_initial_settings()
 	-- what display types do we have? for now, just start with scrolling stored items, and move from there probably...
-	display_type = input_from_set_of_choices("Is this a 'itemscroll', 'storageupdateticker', or 'chooseitemscroll'?", {"itemscroll", "storageupdateticker"}, true)
+	display_type = input_from_set_of_choices("Is this a 'itemscroll', 'storageupdateticker', or 'fetchwindow'?", {"itemscroll", "storageupdateticker", "fetchwindow"}, true)
 	settings.set(settings_prefix.."display_type", display_type)
 end
 
@@ -1560,13 +1560,15 @@ function display_display()
 	-- for now I'm just going to make a computer that updates every minute or so to fetch items and slowly scolls through items
 
 	local monitor_side = getFirstPeripheralSide("monitor")
+	local m = term.native()
+	local monitor_found = true
 	if monitor_side == "" then
-		print("Monitor not found. Exiting")
-		running = false
-		return
+		print("Monitor not found. Wrapping native term as monitor")
+		monitor_found = false -- so that we don't call things like monitor.resizeText on it
+	else
+		print("Monitor found on side " .. monitor_side)
+		m = peripheral.wrap(monitor_side)
 	end
-	print("Monitor found on side " .. monitor_side)
-	local m = peripheral.wrap(monitor_side)
 	local width, height = m.getSize()
 
 	refresh_all_network() -- so that we get display names and stored items etc.
@@ -1627,7 +1629,103 @@ function display_display()
 			number_of_updates = #item_storage_updates
 			sleep(1)
 		end
+	elseif display_type == "fetchwindow" then
+		-- PRETTY GUI THINGS!
+		-- top line should be A-Z and * filters! Assume that we always have at least 26 characters because otherwise is sad
+		local sorted_items = {} -- display these!
+		local fetch_settings = {destination = "Player", in_system = "In System", width = width, height = height}
+		while running do
+			local choice = draw_sorting_menu(m, sorted_items, fetch_settings)
+			-- then go use that choice in a choice menu! Select how many to fetch probably! Magic stuff!
+		end
 	end
+end
+
+function get_destination_options()
+	-- return a list of all the destination options from the storage system!
+	-- get it from the sorting master though not from a constant list
+	return {"Player", "Storage", "Furnace", "Pulverizer"}
+end
+
+function draw_sorting_menu(m, list_of_items, fetch_settings)
+	-- return the selection index!
+	local filter_character = "*"
+	local myTimer = os.startTimer(5)
+	local side_button_width = math.floor(fetch_settings.width/3)
+	local middle_button_width = math.floor(fetch_settings.width/3) + (fetch_settings.width % 3)
+	while running do
+		-- print the alphabet up top for filtering!
+		if fetch_settings.width < 26 then
+			-- oh dear. Probably error? I don't want to deal with this :P -- the correct way would be to have < and > on the sides to slide the window
+			print("Error fitting it all in one screen please use a larger screen thanks!")
+		else
+			-- draw all of them! We have room!
+			m.setCursorPos(1, 1)
+			-- draw *A-Z! yay!
+			for i = 0, 26 do
+				local c = "*"
+				if i > 0 then
+					-- get the character from the alphabet!
+					c = string.strsub("ABCDEFGHIJKLMNOPQRSTUVWXYZ", i, i)
+				end
+				if c == filter_character and fetch_settings.width > 26 then
+					m.setBackgroundColor(colors.green)
+					m.setTextColor(colors.white)
+					m.write(c) -- so that we don't print when it's not wide enough
+				else
+					m.setBackgroundColor(colors.lightGray)
+					m.setTextColor(colors.black)
+					m.write(c)
+				end
+			end
+		end
+		-- print the buttons on the bottom!
+		-- leftmost buttons!
+		-- prev button
+		draw_rectangle(m, 1, fetch_settings.height-1, side_button_width, 1, color.lightGray)
+		center_string_coords(m, "Prev", 1, fetch_settings.height-1, side_button_width, 1, color.lightGray, color.black)
+		-- exit button? maybe we don't want it, but we want it for pocket computers...
+		draw_rectangle(m, 1, fetch_settings.height, side_button_width, 1, color.gray)
+		center_string_coords(m, "Exit", 1, fetch_settings.height, side_button_width, 1, color.gray, color.white)
+		-- center buttons (alternate colors so they're clearer)
+		-- in system
+		draw_rectangle(m, side_button_width+1, fetch_settings.height-1, side_button_width, 1, color.gray)
+		center_string_coords(m, tostring(fetch_settings.in_system), 1, fetch_settings.height-1, side_button_width, 1, color.gray, color.white)
+		-- refresh? Maybe auto-refresh though, but it works
+		draw_rectangle(m, side_button_width+1, fetch_settings.height, side_button_width, 1, color.lightGray)
+		center_string_coords(m, "Refresh", 1, fetch_settings.height, side_button_width, 1, color.lightGray, color.black)
+		-- right buttons
+		-- next button
+		draw_rectangle(m, side_button_width+middle_button_width+1, fetch_settings.height-1, side_button_width, 1, color.lightGray)
+		center_string_coords(m, "Next", side_button_width+middle_button_width+1, fetch_settings.height-1, side_button_width, 1, color.lightGray, color.black)
+		-- Destination button (limited to the button width no matter the length of the destination
+		draw_rectangle(m, side_button_width+middle_button_width+1, fetch_settings.height, side_button_width, 1, color.gray)
+		center_string_coords(m, string.strsub(fetch.settings, 1, side_button_width), side_button_width+middle_button_width+1, fetch_settings.height, side_button_width, 1, color.gray, color.white)
+
+
+		-- then get events! If it's a timer event then probably update and set another timer! If it's a monitor_touch event or a screen touch event then figure out what happens!
+		
+
+	end
+end
+
+function draw_rectangle(m, x, y, width, height, color)
+	-- draw a rectangle of color here
+	m.setBackgroundColor(color)
+	for j = y, y + height do
+		m.setCursorPos(x, y)
+		for i = 1, width do
+			m.write(" ")
+		end
+	end
+end
+
+function center_string_coords(m, s, x, y, width, height, bg_color, text_color)
+	-- write the string in the center of those coordinates
+end
+
+function handle_event_sorting_menu()
+	--
 end
 
 function deinitialization()

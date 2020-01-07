@@ -833,7 +833,7 @@ function add_item_to_storage(item_key, item_count)
 			-- it's not able to store this one! send it to the crypt!
 			amount_not_stored = amount_not_stored + v.count
 			turtle.dropDown(v.count)
-			print("Sent extra items to crypt")
+			print("Sent items to THE CRYPT")
 		else
 			-- apply those changes to the stored items!
 			if itemsStoredBySlot[v.cache_index] == nil then

@@ -418,6 +418,7 @@ function ShouldSendToCrypt(item)
 	if master_id == -1 then
 		while master_id == -1 do
 			-- wait because you have no clue what to do
+			get_master_id_function()
 			print("ERROR! UNABLE TO CONNECT TO MASTER SORTER")
 			sleep(5)
 		end

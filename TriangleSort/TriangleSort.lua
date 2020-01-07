@@ -62,6 +62,7 @@ item_storage_updates = {} -- we only get these if we're subscribed to notificati
 connections = {} -- this is the graph of the network I guess?
 local_connections = {}
 local_directions = {} -- the inverse of local_connections, it's destination="up", destination="forwards", etc.
+all_destinations = {"Player", "Storage", "Furnace", "Pulverizer"} -- every single destination just a string though. These are the default options
 
 default_destinations = {} -- this is stored in a file and is used for regular operations
 custom_destinations = {} -- this is used for crafting items!
@@ -383,6 +384,7 @@ function refresh_all_network(lower_command, command, rest)
 	if not sorting_destination_settings.isMaster then
 		broadcast_including_self({packet = "get_default_destinations"})
 		broadcast_including_self({packet = "get_item_display_names"})
+		get_default_destinations()
 	end
 
 	-- refresh storage things
@@ -718,6 +720,9 @@ function find_local_connections()
 	-- textutils.pagedPrint(textutils.serialise(local_connections))
 	-- print("Local connections")
 	-- print(textutils.serialise(local_connections))
+	for dest, dir in local_connections do
+		all_destinations[#all_destinations + 1] = dest -- add the destinations to the all_destinations list!
+	end
 end
 
 function load_sorting_destinations(edit)
@@ -1001,6 +1006,12 @@ function send_to_storage_nodes(packet)
 	end
 end
 
+function get_all_destinations()
+	-- request the destinations from the master computer!
+	packet = {packet = "get_all_destinations"}
+	broadcast_correct(packet)
+end
+
 function UpdateStorageCount()
 	-- update the master count of items
 	items_stored = {}
@@ -1146,6 +1157,15 @@ function receive_rednet_input()
 					local packet = {packet = "set_master_id", data = os.getComputerID()}
 					send_correct(sender_id, packet)
 				end
+			elseif message.packet == "get_all_destinations" then
+				-- if you're the master tell them what the destinations are!
+				if sorting_destination_settings.isMaster then
+					local packet = {packet = "set_all_destinations", data = all_destinations}
+					send_correct(sender_id, packet)
+				end
+			elseif message.packet == "set_all_destinations" then
+				-- we've learned what the destinations are! yay!
+				all_destinations = message.data
 			elseif message.packet == "set_master_id" then
 				master_id = message.data
 			elseif message.packet == "get_item_display_names" then
@@ -1598,6 +1618,7 @@ function display_display()
 		m = peripheral.wrap(monitor_side)
 	end
 	local width, height = m.getSize()
+	sleep(1) -- sleep for a second in the hopes that the masters and sorting systems will get their stuff figured out so we have a smooth ride
 
 	refresh_all_network() -- so that we get display names and stored items etc.
 	if display_type == "itemscroll" then
@@ -1665,23 +1686,27 @@ function display_display()
 		while running do
 			local choice = draw_sorting_menu(m, sorted_items, fetch_settings)
 			-- then go use that choice in a choice menu! Select how many to fetch probably! Magic stuff!
+			print("Made choice! " .. tostring(choice))
 			sleep(1)
 		end
 	end
 end
 
-function get_destination_options()
-	-- return a list of all the destination options from the storage system!
-	-- get it from the sorting master though not from a constant list
-	return {"Player", "Storage", "Furnace", "Pulverizer"}
-end
-
 function draw_sorting_menu(m, list_of_items, fetch_settings)
 	-- return the selection index!
-	local filter_character = "*"
-	local myTimer = os.startTimer(5)
+	local myTimer = os.startTimer(30)
 	local side_button_width = math.floor(fetch_settings.width/3)
 	local middle_button_width = math.floor(fetch_settings.width/3) + (fetch_settings.width % 3)
+
+	local dest_int = 1
+	for i = 1, #all_destinations do
+		if all_destinations[i] == fetch_settings.destination then
+			dest_int == i
+			break -- set the dest int to be whatever destination there is then so we can change it nicely!
+		end
+	end
+
+	local menu_settings = {middle_button_width = middle_button_width, side_button_width = side_button_width, filter_character = "*", exit = false, dest_int = dest_int, page = 1}
 	while running do
 		-- print the alphabet up top for filtering!
 		if fetch_settings.width < 26 then
@@ -1697,7 +1722,7 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 					-- get the character from the alphabet!
 					c = string.sub("ABCDEFGHIJKLMNOPQRSTUVWXYZ", i, i)
 				end
-				if c == filter_character and fetch_settings.width > 26 then
+				if c == menu_settings.filter_character and fetch_settings.width > 26 then
 					m.setBackgroundColor(colors.green)
 					m.setTextColor(colors.white)
 					m.write(c) -- so that we don't print when it's not wide enough
@@ -1718,6 +1743,8 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 		center_string_coords(m, "Exit", 1, fetch_settings.height, side_button_width, 1, colors.gray, colors.white)
 		-- center buttons (alternate colors so they're clearer)
 		-- in system
+
+
 		draw_rectangle(m, side_button_width+1, fetch_settings.height-1, middle_button_width, 1, colors.gray)
 		center_string_coords(m, tostring(fetch_settings.in_system), side_button_width+1, fetch_settings.height-1, middle_button_width, 1, colors.gray, colors.white)
 		-- refresh? Maybe auto-refresh though, but it works
@@ -1733,7 +1760,93 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 
 
 		-- then get events! If it's a timer event then probably update and set another timer! If it's a monitor_touch event or a screen touch event then figure out what happens!
-		sleep(1)
+		local event, param1, param2, param3, param4, param5 = os.pullEvent()
+		if event == "timer" then
+			-- check if it's mine just for the fun of it? If it is, start a new one. In the meantime, refresh!
+			if param1 == myTimer then
+				print("Resetting my timer!")
+				myTimer = os.startTimer(30)
+				refresh_all_network() -- maybe just refresh items and destinations but shhh it works for now
+			end
+		elseif event == "monitor_touch" then
+			-- deal with the button presses!
+			handle_mouse_press_on_sorting_menu(m, param1, param2, list_of_items, fetch_settings, menu_settings)
+		elseif event == "mouse_click" then
+			-- mouse click! may be useful if we're on a pocket computer etc.
+			handle_mouse_press_on_sorting_menu(m, param1, param2, list_of_items, fetch_settings, menu_settings)
+		end
+		-- ignore the other events for now, but we may want to have it also handle mouse_presses which are basically identical to monitor_touches.
+
+		if menu_settings.exit then
+			-- return early
+			print("EXIT NOT IMPLEMENTED YET I'M WORKING ON IT")
+			-- os.cancelTimer(myTimer)
+		end
+	end
+	os.cancelTimer(myTimer)
+end
+
+function handle_mouse_press_on_sorting_menu(m, x, y, list_of_items, fetch_settings, menu_settings)
+	-- figure out what was pressed and change things! also may need to return things but for now just edit the settings
+	if y >= height then
+		-- bottom row of buttons
+		if x <= menu_settings.side_button_width then
+			-- exit button pressed
+			print("Exit button pressed")
+			menu_settings.exit = true
+		elseif x <= menu_settings.side_button_width + menu_settings.middle_button_width then
+			-- in system requirement changed!
+			if fetch_settings.in_system == "In System" then
+				fetch_settings.in_system = "All Items"
+			else
+				fetch_settings.in_system = "In System"
+			end
+		else
+			-- the destination button!
+			if #all_destinations == 0 then
+				-- we don't know anything so tell people to refresh?? IDK.
+			else
+				-- change the setting to the next one!
+				menu_settings.dest_int = menu_settings.dest_int + 1
+				if menu_settings.dest_int > #all_destinations then
+					menu_settings.dest_int = 1
+				end
+				fetch_settings.destination = all_destinations[menu_settings.dest_int]
+			end
+		end
+	elseif y >= height - 1 then
+		-- second to bottom row of buttons
+		if x <= menu_settings.side_button_width then
+			-- exit button pressed
+			print("Prev button pressed")
+		elseif x <= menu_settings.side_button_width + menu_settings.middle_button_width then
+			-- refresh!
+			print("Refreshing!")
+			refresh_all_network()
+		else
+			-- the destination button!
+			print("Next button pressed")
+		end
+	elseif y <= 1 then
+		-- top row of settings! Choose a character!
+		if fetch_settings.width > 26 then
+			-- we have all of the possibilities including *
+			if x < 28 then
+				menu_settings.filter_character = string.sub("*ABCDEFGHIJKLMNOPQRSTUVWXYZ", x+1, x+1)
+				menu_settings.page = 1
+			else
+				-- we pressed off to the side but that doesn't do anything
+			end
+		elseif fetch_settings.width < 26 then
+			-- we have an error
+			print("Error, monitor width is too small! Please make it larger?")
+		else
+			-- we're missing the current filter, but aside from that we're good.
+			print("Not implemented yet we're working on it!")
+		end
+	else
+		-- picked an item probably! Do stuff!
+		print("Picked an item but not implemented yet, sorry!")
 	end
 end
 
@@ -1754,10 +1867,6 @@ function center_string_coords(m, s, x, y, width, height, bg_color, text_color)
 	m.setTextColor(text_color)
 	m.setCursorPos(x, math.floor((y+y+height)/2)) -- center vertically. For now I don't care enough about centering horizontally
 	m.write(string.sub(s, 1, width))
-end
-
-function handle_event_sorting_menu()
-	--
 end
 
 function deinitialization()

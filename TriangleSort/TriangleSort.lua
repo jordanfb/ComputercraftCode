@@ -962,7 +962,7 @@ end
 
 function itemKeyAlphabeticallyByDisplayName()
 	local a = {}
-	for n in pairs(display_names_to_keys) do -- get the display_names
+	for n in pairs(display_names_to_keys) do -- get the display_names into the table a
 		table.insert(a, n)
 	end
 	table.sort(a)
@@ -971,10 +971,36 @@ function itemKeyAlphabeticallyByDisplayName()
 		i = i + 1
 		-- print(textutils.pagedPrint(textutils.serialise(display_names_to_keys[a[i]])))
 		if a[i] == nil then return nil
-		else return a[i], display_names_to_keys[a[i]][1] -- loops over display_name, item_key (which for some reason is in a table?)
+		else return a[i], display_names_to_keys[a[i]][1], safe_get_item_count(display_names_to_keys[a[i]][1]) -- loops over display_name, item_key (which for some reason is in a table?)
 		end
 	end
 	return iter
+end
+
+function alphabeticalItemKeyBothDirectionsManual()
+	local a = {}
+	for n in pairs(display_names_to_keys) do -- get the display_names into the table a
+		table.insert(a, n)
+	end
+	table.sort(a)
+	local i = 0      -- iterator variable
+	local iter = function(step)   -- iterator function
+		i = i + step
+		if a[i] == nil then return nil
+		if i < 0 then return nil
+		else return a[i], display_names_to_keys[a[i]][1], safe_get_item_count(display_names_to_keys[a[i]][1]) -- loops over display_name, item_key (which for some reason is in a table?)
+		end
+	end
+	return iter
+end
+
+function get_item_count_from_key_or_display_name(key_or_display_name)
+	local count = safe_get_item_count(key_or_display_name) -- if it's an item key it'll work
+	if count == 0 then
+		-- it's possible it's a display name, in which case we should try to convert it to a item_key then return that value
+		print("FIX THIS NOT IMPLEMENTED YET") -- I may actually be set without this function, but I'll leave it here for now. I guess this is how dead code gets made...
+	end
+	return count
 end
 
 function get_item_key(item_table)
@@ -1026,6 +1052,13 @@ function UpdateStorageCount()
 			-- also add the locations but not at the moment because I don't care about that at the moment FIX THIS
 		end
 	end
+end
+
+function safe_get_item_count(item_key)
+	if items_stored[item_key] == nil then
+		return 0
+	end
+	return items_stored[item_key].count
 end
 
 function receive_rednet_input()
@@ -1681,10 +1714,10 @@ function display_display()
 	elseif display_type == "fetchwindow" then
 		-- PRETTY GUI THINGS!
 		-- top line should be A-Z and * filters! Assume that we always have at least 26 characters because otherwise is sad
-		local sorted_items = {} -- display these!
-		local fetch_settings = {destination = "Player", in_system = "In System", width = width, height = height}
+		local fetch_settings = {destination = "Player", in_system = "In System", width = width, height = height, using_monitor = monitor_found}
+		local sorted_items_function = get_sorted_items
 		while running do
-			local choice = draw_sorting_menu(m, sorted_items, fetch_settings)
+			local choice = draw_sorting_menu(m, sorted_items_function, fetch_settings)
 			-- then go use that choice in a choice menu! Select how many to fetch probably! Magic stuff!
 			print("Made choice! " .. tostring(choice))
 			sleep(1)
@@ -1692,11 +1725,61 @@ function display_display()
 	end
 end
 
-function draw_sorting_menu(m, list_of_items, fetch_settings)
+function get_sorted_items(filter_characters, num_items, page_num)
+	-- sort the names alphabetically and have counts!
+	-- if we don't have the display name just show the item_key!
+	local iter = alphabeticalItemKeyBothDirectionsManual()
+	-- loop through these to find the items that are in order that we can display!
+	local display_items = {} -- indexed by number, starting at 1, and with a table of values to display left to right!
+	local items_to_skip = (page_num - 1) * num_items -- skip however many pages of items!
+	local filter_len = #filter_characters
+	if string.sub(filter_characters, 1, 1) == "*" then
+		-- it's a global match! Include everything!
+		filter_len = 0
+	end
+	local filter_characters = string.lower(filter_characters) -- make it lowercase!
+	local filter_check = filter_characters
+	while #display_items < num_items do
+		-- figure it out!
+		-- loop until something matches your filter_characters!
+		-- if we don't hit anything then skip it!
+		local display_name, item_key, item_count = iter(1)
+		if display_name == nil then
+			-- exit out! We don't have anything more to show!
+			break
+		end
+		-- otherwise we've at least found SOME item, so try to see if it's filterable!
+		if filter_len > 0 then
+			filter_check = string.sub(string.lower(display_name), 1, filter_len)
+		end
+		if filter_check == filter_characters then
+			-- it's a valid item to display!
+			if items_to_skip > 0 then
+				items_to_skip = items_to_skip - 1
+			else
+				-- add it to the list of items!
+				display_items[#display_items + 1] = {display_name, item_key, item_count}
+			end
+		end
+	end
+	return display_items
+end
+
+function draw_sorting_menu(m, item_list_function, fetch_settings)
 	-- return the selection index!
 	local myTimer = os.startTimer(30)
 	local side_button_width = math.floor(fetch_settings.width/3)
 	local middle_button_width = math.floor(fetch_settings.width/3) + (fetch_settings.width % 3)
+
+	local item_display_height = fetch_settings.height - 3
+	-- get_sorted_items(filter_characters, num_items, page_num)
+
+	local menu_settings = {middle_button_width = middle_button_width, side_button_width = side_button_width,
+					filter_character = "*", exit = false, dest_int = dest_int, page = 1,
+					item_list_function = item_list_function, item_display_height = item_display_height,
+					item_current_page = 1, -- so that we can check if we've changed what page we're now on!
+				}
+	menu_settings.items = menu_settings.item_list_function(menu_settings.filter_character, menu_settings.item_display_height, menu_settings.page)
 
 	local dest_int = 1
 	for i = 1, #all_destinations do
@@ -1706,9 +1789,11 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 		end
 	end
 
-	local menu_settings = {middle_button_width = middle_button_width, side_button_width = side_button_width, filter_character = "*", exit = false, dest_int = dest_int, page = 1}
 	while running do
 		-- print the alphabet up top for filtering!
+		-- if the filter letters are more then 1 then make a word entry box with a delete button!
+		-- Typing it in adds characters, deleting (obviously) removes them, until it gets to zero characters i.e. the star, anything filter
+		-- FIX THIS!
 		if fetch_settings.width < 26 then
 			-- oh dear. Probably error? I don't want to deal with this :P -- the correct way would be to have < and > on the sides to slide the window
 			print("Error fitting it all in one screen please use a larger screen thanks!")
@@ -1743,8 +1828,6 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 		center_string_coords(m, "Exit", 1, fetch_settings.height, side_button_width, 1, colors.gray, colors.white)
 		-- center buttons (alternate colors so they're clearer)
 		-- in system
-
-
 		draw_rectangle(m, side_button_width+1, fetch_settings.height-1, middle_button_width, 1, colors.gray)
 		center_string_coords(m, tostring(fetch_settings.in_system), side_button_width+1, fetch_settings.height-1, middle_button_width, 1, colors.gray, colors.white)
 		-- refresh? Maybe auto-refresh though, but it works
@@ -1759,6 +1842,38 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 		center_string_coords(m, string.sub(fetch_settings.destination, 1, side_button_width), side_button_width+middle_button_width+1, fetch_settings.height, side_button_width, 1, colors.gray, colors.white)
 
 
+		-- then draw the items to pick from, page by page! Filter them by the filter characters obviously!
+		-- have to sort them all as lowercase too because I don't want case sensitivity to mess things up
+		-- FIX THIS (then add a number choosing screen and then hit send and it's done!) Return this pick to the main display function for it to call the number picker
+		-- loop over the items to display!
+		if #menu_settings.items == 0 and menu_settings.page == 1 then
+			-- we don't have anything matching this query at all
+			m.setCursorPos(1, 2)
+			m.setBackgroundColor(colors.white)
+			m.setTextColor(colors.black)
+			m.write("No items matching "..tostring(menu_settings.filter_character))
+		elseif #menu_settings.items == 0 then
+			-- we're on the second page or something of this, so we have had some items, but now we're out!
+			m.setCursorPos(1, 2)
+			m.setBackgroundColor(colors.white)
+			m.setTextColor(colors.black)
+			m.write("No more items matching "..tostring(menu_settings.filter_character))
+		else
+			m.setBackgroundColor(colors.white)
+			m.setTextColor(colors.black)
+			for y = 1, #menu_settings.items do
+				-- draw the items!
+				m.setCursorPos(1, y+1)
+				-- draw an index? Do we care? Maybe? It's handy I guess to give you an idea about how many items there are visible
+				local index = (y) + (menu_settings.page- 1) * menu_settings.item_display_height
+				m.write(tostring(index))
+				m.setCursorPos(5, y+1)
+				m.write(tostring(menu_settings.items[y][1])) -- the display name!
+				m.setCursorPos(menu_settings.width - 5, y+1)
+				m.write(tostring(menu_settings.items[y][3])) -- the item count!
+			end
+		end
+
 		-- then get events! If it's a timer event then probably update and set another timer! If it's a monitor_touch event or a screen touch event then figure out what happens!
 		local event, param1, param2, param3, param4, param5 = os.pullEvent()
 		if event == "timer" then
@@ -1771,11 +1886,19 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 		elseif event == "monitor_touch" then
 			-- deal with the button presses!
 			handle_mouse_press_on_sorting_menu(m, param2, param3, list_of_items, fetch_settings, menu_settings)
-		elseif event == "mouse_click" then
+		elseif event == "mouse_click" and not fetch_settings.using_monitor then
 			-- mouse click! may be useful if we're on a pocket computer etc.
+			-- only use these clicks if we're displaying on our computer screen
 			handle_mouse_press_on_sorting_menu(m, param2, param3, list_of_items, fetch_settings, menu_settings)
 		end
-		-- ignore the other events for now, but we may want to have it also handle mouse_presses which are basically identical to monitor_touches.
+		-- ignore the other events for now, but we may want to have it also handle key presses for filtering
+
+		-- figure out the page of items to display!
+		if menu_settings.item_current_page ~= menu_settings.page then
+			menu_settings.item_current_page = menu_settings.page
+			-- calculate the items!
+			menu_settings.items = menu_settings.item_list_function(menu_settings.filter_character, menu_settings.item_display_height, menu_settings.page)
+		end
 
 		if menu_settings.exit then
 			-- return early
@@ -1824,10 +1947,15 @@ function handle_mouse_press_on_sorting_menu(m, x, y, list_of_items, fetch_settin
 			else
 				fetch_settings.in_system = "In System"
 			end
+			menu_settings.page = 1 -- also reset to the first page so we know that we should re-sort the items!
 		else
 			-- the destination button!
 			print("Next button pressed")
-			menu_settings.page = menu_settings.page + 1
+			if #menu_settings.items > 0 then
+				-- only go to the next page if you still have some items left to display!
+				-- if you don't, then don't go to the page, duh!
+				menu_settings.page = menu_settings.page + 1
+			end
 		end
 	elseif y <= 1 then
 		-- top row of settings! Choose a character!

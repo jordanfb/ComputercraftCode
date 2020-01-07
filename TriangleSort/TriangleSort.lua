@@ -2007,7 +2007,7 @@ function draw_rectangle(m, x, y, width, height, color)
 	-- draw a rectangle of color here
 	m.setBackgroundColor(color)
 	for j = y, y + height do
-		m.setCursorPos(x, y)
+		m.setCursorPos(x, j)
 		for i = 1, width do
 			m.write(" ")
 		end

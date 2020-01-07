@@ -1907,6 +1907,7 @@ function draw_sorting_menu(m, item_list_function, fetch_settings)
 		if menu_settings.item_current_page ~= menu_settings.page then
 			menu_settings.item_current_page = menu_settings.page
 			-- calculate the items!
+			print("Generating items")
 			menu_settings.items = menu_settings.item_list_function(menu_settings.filter_character, menu_settings.item_display_height, menu_settings.page)
 		end
 

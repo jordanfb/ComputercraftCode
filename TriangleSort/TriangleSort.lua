@@ -867,11 +867,6 @@ function initialization()
 	load_settings()
 	initialize_terminal_commands()
 	load_sorting_device_action()
-	if sorting_destination_settings.isMaster then
-		-- only load the display and destination files if you're a master. Everyone else will ask you for them.
-		load_display_names()
-		load_default_destinations()
-	end
 	check_if_replace_prefix()
 
 	print("ID: " ..os.getComputerID() .. " - Label: " .. os.getComputerLabel())
@@ -888,6 +883,11 @@ function initialization()
 	if sorting_computer_type == "sorter" then
 		-- initialize sorting things!
 		load_sorting_destinations(first_initialization or edit_destinations)
+		if sorting_destination_settings.isMaster then
+			-- only load the display and destination files if you're a master. Everyone else will ask you for them.
+			load_display_names()
+			load_default_destinations()
+		end
 		find_local_connections()
 		drop_all_items_into_origin()
 	elseif sorting_computer_type == "terminal" then
@@ -1704,7 +1704,7 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 
 
 		-- then get events! If it's a timer event then probably update and set another timer! If it's a monitor_touch event or a screen touch event then figure out what happens!
-		
+
 
 	end
 end

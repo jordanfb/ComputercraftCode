@@ -1795,12 +1795,9 @@ function handle_mouse_press_on_sorting_menu(m, x, y, list_of_items, fetch_settin
 			print("Exit button pressed")
 			menu_settings.exit = true
 		elseif x <= menu_settings.side_button_width + menu_settings.middle_button_width then
-			-- in system requirement changed!
-			if fetch_settings.in_system == "In System" then
-				fetch_settings.in_system = "All Items"
-			else
-				fetch_settings.in_system = "In System"
-			end
+			-- refresh!
+			print("Refreshing!")
+			refresh_all_network()
 		else
 			-- the destination button!
 			if #all_destinations == 0 then
@@ -1820,9 +1817,12 @@ function handle_mouse_press_on_sorting_menu(m, x, y, list_of_items, fetch_settin
 			-- exit button pressed
 			print("Prev button pressed")
 		elseif x <= menu_settings.side_button_width + menu_settings.middle_button_width then
-			-- refresh!
-			print("Refreshing!")
-			refresh_all_network()
+			-- in system requirement changed!
+			if fetch_settings.in_system == "In System" then
+				fetch_settings.in_system = "All Items"
+			else
+				fetch_settings.in_system = "In System"
+			end
 		else
 			-- the destination button!
 			print("Next button pressed")

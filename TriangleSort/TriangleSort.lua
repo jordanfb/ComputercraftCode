@@ -1788,7 +1788,7 @@ end
 
 function handle_mouse_press_on_sorting_menu(m, x, y, list_of_items, fetch_settings, menu_settings)
 	-- figure out what was pressed and change things! also may need to return things but for now just edit the settings
-	if y >= height then
+	if y >= fetch_settings.height then
 		-- bottom row of buttons
 		if x <= menu_settings.side_button_width then
 			-- exit button pressed
@@ -1814,7 +1814,7 @@ function handle_mouse_press_on_sorting_menu(m, x, y, list_of_items, fetch_settin
 				fetch_settings.destination = all_destinations[menu_settings.dest_int]
 			end
 		end
-	elseif y >= height - 1 then
+	elseif y >= fetch_settings.height - 1 then
 		-- second to bottom row of buttons
 		if x <= menu_settings.side_button_width then
 			-- exit button pressed

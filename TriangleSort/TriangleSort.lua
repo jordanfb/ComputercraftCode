@@ -720,7 +720,7 @@ function find_local_connections()
 	-- textutils.pagedPrint(textutils.serialise(local_connections))
 	-- print("Local connections")
 	-- print(textutils.serialise(local_connections))
-	for dest, dir in local_connections do
+	for dest, dir in pairs(local_connections) do
 		all_destinations[#all_destinations + 1] = dest -- add the destinations to the all_destinations list!
 	end
 end

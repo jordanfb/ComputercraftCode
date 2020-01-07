@@ -1701,7 +1701,7 @@ function draw_sorting_menu(m, list_of_items, fetch_settings)
 	local dest_int = 1
 	for i = 1, #all_destinations do
 		if all_destinations[i] == fetch_settings.destination then
-			dest_int == i
+			dest_int = i
 			break -- set the dest int to be whatever destination there is then so we can change it nicely!
 		end
 	end

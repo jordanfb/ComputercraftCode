@@ -531,7 +531,10 @@ function receive_rednet_input()
 		local destination_id = message.to
 		local message_id = message.id
 
-		if (received_rednet_messages[sender_id][message_id] == nil and (destination_id == -1 or destination_id == os.getComputerID())) or message.packet == "reset_message_id" then
+		if ((received_rednet_messages[sender_id] == nil or received_rednet_messages[sender_id][message_id] == nil) and (destination_id == -1 or destination_id == os.getComputerID())) or message.packet == "reset_message_id" then
+			if received_rednet_messages[sender_id] == nil then
+				received_rednet_messages[sender_id] = {}
+			end
 			-- then it's a new message and we should pay attention to it!
 			-- figure out what to do with that message
 			received_rednet_messages[sender_id][message_id] = true -- we've gotten the message so ignore future versions!

@@ -1781,13 +1781,6 @@ function draw_sorting_menu(m, item_list_function, fetch_settings)
 	local item_display_height = fetch_settings.height - 3
 	-- get_sorted_items(filter_characters, num_items, page_num)
 
-	local menu_settings = {middle_button_width = middle_button_width, side_button_width = side_button_width,
-					filter_character = "*", exit = false, dest_int = dest_int, page = 1,
-					item_list_function = item_list_function, item_display_height = item_display_height,
-					item_current_page = 1, -- so that we can check if we've changed what page we're now on!
-				}
-	menu_settings.items = menu_settings.item_list_function(menu_settings.filter_character, menu_settings.item_display_height, menu_settings.page)
-
 	local dest_int = 1
 	for i = 1, #all_destinations do
 		if all_destinations[i] == fetch_settings.destination then
@@ -1795,6 +1788,16 @@ function draw_sorting_menu(m, item_list_function, fetch_settings)
 			break -- set the dest int to be whatever destination there is then so we can change it nicely!
 		end
 	end
+
+
+	local menu_settings = {middle_button_width = middle_button_width, side_button_width = side_button_width,
+					filter_character = "*", exit = false, dest_int = dest_int, page = 1,
+					item_list_function = item_list_function, item_display_height = item_display_height,
+					item_current_page = 1, -- so that we can check if we've changed what page we're now on!
+				}
+	menu_settings.items = menu_settings.item_list_function(menu_settings.filter_character, menu_settings.item_display_height, menu_settings.page)
+
+
 
 	while running do
 		-- print the alphabet up top for filtering!

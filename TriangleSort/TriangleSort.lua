@@ -1733,8 +1733,15 @@ function display_display()
 					-- fetch it! Create a custom destination heading to the destination with this count and item!
 					local key = choice[2]
 					packet = {packet="set_new_item_custom_destination", data={items={}, destination=fetch_settings.destination}}
-					fetch_items_from_random_storage(key, count, false)
-					print("Fetching " .. tostring(key) .. "  " .. tostring(count))
+					local item_t = item_key_to_item_table(key)
+					if item_t ~= nil then
+						item_t.count = count
+						packet.data.items[#packet.data.items + 1] = item_t -- make an item table from a key? probably?
+						fetch_items_from_random_storage(key, count, false)
+						print("Fetching " .. tostring(key) .. "  " .. tostring(count))
+					else
+						print("Error fetching " .. tostring(key) .. " couldn't make item table")
+					end
 				end
 			end
 			sleep(1)

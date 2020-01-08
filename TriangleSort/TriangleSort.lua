@@ -1737,6 +1737,7 @@ function display_display()
 					if item_t ~= nil then
 						item_t.count = count
 						packet.data.items[#packet.data.items + 1] = item_t -- make an item table from a key? probably?
+						broadcast_including_self(packet)
 						fetch_items_from_random_storage(key, count, false)
 						print("Fetching " .. tostring(key) .. "  " .. tostring(count))
 					else

@@ -110,6 +110,8 @@ function initialize_terminal_commands()
 		toggle_verbose=toggle_verbose_command,
 		set_verbose=set_verbose_network_command,
 		update_storage=update_storage_command,
+		g=graphical_fetch_command,
+		graphcal_fetch=graphical_fetch_command,
 		}
 end
 
@@ -284,6 +286,10 @@ end
 
 function help_command(lower_command, command, rest)
 	display_commands(terminal_commands)
+end
+
+function graphical_fetch_command(lower_command, command, rest)
+	graphical_item_fetch_for_pocket_computer()
 end
 
 function set_verbose_network_command(lower_command, command, rest)
@@ -1755,6 +1761,40 @@ function display_display()
 	end
 end
 
+function graphical_item_fetch_for_pocket_computer()
+	local m = term.native()
+	local monitor_found = false
+	local width, height = m.getSize()
+	local fetch_settings = {destination = "Player", in_system = "In System", width = width, height = height, using_monitor = monitor_found}
+	local sorted_items_function = get_sorted_items
+	local choice = draw_sorting_menu(m, sorted_items_function, fetch_settings)
+	-- then go use that choice in a choice menu! Select how many to fetch probably! Magic stuff!
+	-- print("Made choice! " .. tostring(choice))
+	if choice ~= nil and choice[1] ~= nil then
+		local count = item_count_menu(m, choice, fetch_settings)
+		if count ~= nil and count > 0 then
+			-- fetch it! Create a custom destination heading to the destination with this count and item!
+			local key = choice[2]
+			packet = {packet="set_new_item_custom_destination", data={items={}, destination=fetch_settings.destination}}
+			local item_t = item_key_to_item_table(key)
+			if item_t ~= nil then
+				item_t.count = count
+				packet.data.items[#packet.data.items + 1] = item_t -- make an item table from a key? probably?
+				broadcast_including_self(packet)
+				fetch_items_from_random_storage(key, count, false)
+				-- print("Fetching " .. tostring(key) .. "  " .. tostring(count))
+				m.setBackgroundColor(colors.white)
+				m.clear()
+				center_string_coords(m, "Sent Request!", 1, 1, fetch_settings.width, fetch_settings.height, colors.white, colors.black)
+				sleep(2.5)
+				m.clear()
+			else
+				print("Error fetching " .. tostring(key) .. " couldn't make item table")
+			end
+		end
+	end
+end
+
 function item_count_menu(m, choice, fetch_settings)
 	-- draw the menu for how many of the item you want to get.
 	-- show a back button, show a fetch button, show the names, and set the choice when you submit etc.
@@ -2189,7 +2229,7 @@ function center_string_coords(m, s, x, y, width, height, bg_color, text_color)
 	s = tostring(s)
 	m.setBackgroundColor(bg_color)
 	m.setTextColor(text_color)
-	local centered_x = math.floor((x+x+width)/2) - math.floor((#s+1) / 2)
+	local centered_x = math.floor((x+x+width)/2) - math.floor((#s) / 2+.5)
 	-- center the text horizontally! This gets the middle of the box, then subtracts half the text length
 	m.setCursorPos(centered_x, math.floor((y+y+height)/2)) -- center vertically.
 	m.write(string.sub(s, 1, width))

@@ -1727,7 +1727,7 @@ function display_display()
 			local choice = draw_sorting_menu(m, sorted_items_function, fetch_settings)
 			-- then go use that choice in a choice menu! Select how many to fetch probably! Magic stuff!
 			-- print("Made choice! " .. tostring(choice))
-			if choice.name ~= nil then
+			if choice[1] ~= nil then
 				local count = item_count_menu(m, choice, fetch_settings)
 			end
 			sleep(1)

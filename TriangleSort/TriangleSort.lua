@@ -1851,7 +1851,7 @@ function handle_item_count_menu_event(m, x, y, choice, fetch_settings, menu_sett
 				if not isPositive then
 					value = - value -- make it negative!
 				end
-				choice.count = math.max(0, math.min(choice.count + value, 64*8) -- arbitrary item limit. FIX THIS
+				choice.count = math.max(0, math.min(choice.count + value, 64*8)) -- arbitrary item limit. FIX THIS
 			else
 				-- it's even width so it should be nicer?
 				local half_width = math.floor(fetch_settings.width / 2) -- shouldn't need the floor but just in case

@@ -1921,7 +1921,7 @@ function handle_item_count_menu_event(m, x, y, choice, fetch_settings, menu_sett
 				if not isPositive then
 					value = - value -- make it negative!
 				end
-				choice.count = value
+				choice.count = math.max(0, math.min(choice.count + value, 64*8)) -- arbitrary item limit. FIX THIS
 			end
 		end
 	end

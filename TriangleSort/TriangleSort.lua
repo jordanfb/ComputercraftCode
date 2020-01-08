@@ -1939,7 +1939,6 @@ function get_sorted_items(filter_characters, num_items, page_num, has_items_stor
 		-- it's a global match! Include everything!
 		filter_len = 0
 	end
-	print("Has items stored " .. tostring(has_items_stored))
 	local filter_characters = string.lower(filter_characters) -- make it lowercase!
 	local filter_check = filter_characters
 	while #display_items < num_items do
@@ -1991,7 +1990,7 @@ function draw_sorting_menu(m, item_list_function, fetch_settings)
 					item_list_function = item_list_function, item_display_height = item_display_height,
 					item_current_page = 1, -- so that we can check if we've changed what page we're now on!
 				}
-	menu_settings.items = menu_settings.item_list_function(menu_settings.filter_character, menu_settings.item_display_height, menu_settings.page, menu_settings.in_system == "In System")
+	menu_settings.items = menu_settings.item_list_function(menu_settings.filter_character, menu_settings.item_display_height, menu_settings.page, fetch_settings.in_system == "In System")
 
 	m.setBackgroundColor(colors.lightGray)
 	m.clear() -- clear everything to light gray
@@ -2112,7 +2111,7 @@ function draw_sorting_menu(m, item_list_function, fetch_settings)
 			menu_settings.item_current_page = menu_settings.page
 			-- calculate the items!
 			print("Generating items")
-			menu_settings.items = menu_settings.item_list_function(menu_settings.filter_character, menu_settings.item_display_height, menu_settings.page, menu_settings.in_system == "In System")
+			menu_settings.items = menu_settings.item_list_function(menu_settings.filter_character, menu_settings.item_display_height, menu_settings.page, fetch_settings.in_system == "In System")
 		end
 
 		if menu_settings.exit then

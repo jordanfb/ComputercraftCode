@@ -1730,7 +1730,11 @@ function display_display()
 			if choice[1] ~= nil then
 				local count = item_count_menu(m, choice, fetch_settings)
 				if count ~= nil and count > 0 then
-					-- fetch it!
+					-- fetch it! Create a custom destination heading to the destination with this count and item!
+					local key = choice[2]
+					packet = {packet="set_new_item_custom_destination", data={items={}, destination=fetch_settings.destination}}
+					fetch_items_from_random_storage(key, count, false)
+					print("Fetching " .. tostring(key) .. "  " .. tostring(count))
 				end
 			end
 			sleep(1)
@@ -1840,7 +1844,7 @@ function handle_item_count_menu_event(m, x, y, choice, fetch_settings, menu_sett
 				if not isPositive then
 					value = - value -- make it negative!
 				end
-				choice.count = value
+				choice.count = math.max(0, math.min(choice.count + value, 64*8) -- arbitrary item limit. FIX THIS
 			else
 				-- it's even width so it should be nicer?
 				local half_width = math.floor(fetch_settings.width / 2) -- shouldn't need the floor but just in case

@@ -1729,6 +1729,9 @@ function display_display()
 			-- print("Made choice! " .. tostring(choice))
 			if choice[1] ~= nil then
 				local count = item_count_menu(m, choice, fetch_settings)
+				if count ~= nil and count > 0 then
+					-- fetch it!
+				end
 			end
 			sleep(1)
 		end
@@ -1741,6 +1744,9 @@ function item_count_menu(m, choice, fetch_settings)
 	-- +1  +8  +64 
 	local myTimer = os.startTimer(5)
 	local menu_settings = {exit = false, screen_middle_height = math.floor(fetch_settings.height/2)}
+	if choice.count == nil then
+		choice.count = 0 -- just do this for now?
+	end
 	while running do
 		-- draw the current count! the max count, and the item name, and the buttons etc.
 
@@ -1753,10 +1759,17 @@ function item_count_menu(m, choice, fetch_settings)
 		-- draw the item name!
 		center_string_coords(m, "Fetching:", 1, math.floor(menu_settings.screen_middle_height/2)-1, fetch_settings.width, 1, colors.white, colors.black)
 		center_string_coords(m, choice[1], 1, math.floor(menu_settings.screen_middle_height/2), fetch_settings.width, 1, colors.white, colors.black)
+		center_string_coords(m, "Sending to:" .. tostring(fetch_settings.destination), 1, math.floor(menu_settings.screen_middle_height/2)+1, fetch_settings.width, 1, colors.white, colors.black)
+
 		local num_string = tostring(choice.count)
 		-- fix DISPLAY AND USE MAX ITEMS AVAILABLE. FIX THIS. It's not worth it at the moment I don't want to deal with it :P
 		center_string_coords(m, num_string, 1, menu_settings.screen_middle_height - 1, fetch_settings.width, 1, colors.white, colors.black)
-		center_string_coords(m, " -64  -8  -1  +1  +8  +64 ", 1, menu_settings.screen_middle_height, fetch_settings.width, 1, colors.lightGray, colors.black)
+		local num_change_text = "-64  -8  -1  +1  +8  +64"
+		if fetch_settings.width % 2 == 1 then
+			-- add an extra space so that it's nicer and centered because the width is odd!
+			num_change_text = "-64  -8  -1   +1  +8  +64"
+		end
+		center_string_coords(m, num_change_text, 1, menu_settings.screen_middle_height, fetch_settings.width, 1, colors.lightGray, colors.black)
 
 
 		-- now draw the submit and the quit button!
@@ -1764,8 +1777,8 @@ function item_count_menu(m, choice, fetch_settings)
 		draw_rectangle(m, 1, fetch_settings.height - 5, math.floor((fetch_settings.width-1)/2), 5, colors.lightGray)
 		center_string_coords(m, "Cancel", 1, fetch_settings.height - 5, math.floor((fetch_settings.width-1)/2), 5, colors.lightGray, colors.black)
 		-- submit button
-		draw_rectangle(m, fetch_settings.width - math.floor((fetch_settings.width-1)/2), fetch_settings.height - 5, math.floor((fetch_settings.width-1)/2), 5, colors.lightGray)
-		center_string_coords(m, "Fetch", fetch_settings.width - math.floor((fetch_settings.width-1)/2), fetch_settings.height - 5, math.floor((fetch_settings.width-1)/2), 5, colors.lightGray, colors.black)
+		draw_rectangle(m, fetch_settings.width - math.floor((fetch_settings.width-1)/2)+1, fetch_settings.height - 5, math.floor((fetch_settings.width-1)/2), 5, colors.lightGray)
+		center_string_coords(m, "Fetch", fetch_settings.width - math.floor((fetch_settings.width-1)/2)+1, fetch_settings.height - 5, math.floor((fetch_settings.width-1)/2), 5, colors.lightGray, colors.black)
 
 
 		local event, param1, param2, param3, param4, param5 = os.pullEvent()
@@ -1795,7 +1808,63 @@ function item_count_menu(m, choice, fetch_settings)
 end
 
 function handle_item_count_menu_event(m, x, y, choice, fetch_settings, menu_settings)
-	--
+	if y > fetch_settings.height - 5 then
+		-- pressing submit or cancel
+		if x > fetch_settings.width/2 then
+			-- pressing submit!
+			-- exit with whatever number we currently have!
+			menu_settings.exit = true
+		else
+			-- pressing cancel!
+			choice.count = 0 -- cancel it with 0 items chosen. There could be an actual choose 0 vs canceled choice, but it works for now
+			menu_settings.exit = true
+		end
+	else
+		-- probably pressed on a change item count button?
+		if y == menu_settings.screen_middle_height then
+			-- pressed on the menu items! FIgure out which one though!
+			if fetch_settings.width % 2 == 1 then
+				-- the width is odd so there's an extra space in the middle
+				local half_width = math.floor(fetch_settings.width / 2)+1
+				local isPositive = x > half_width
+				local distance = math.abs(half_width - x)
+				local value = 1
+				if distance <= 4 then
+					-- value is 1
+					value = 1
+				elseif distance <= 8 then
+					value = 8
+				elseif distance <= 13 then
+					value = 64
+				end
+				if not isPositive then
+					value = - value -- make it negative!
+				end
+				choice.count = value
+			else
+				-- it's even width so it should be nicer?
+				local half_width = math.floor(fetch_settings.width / 2) -- shouldn't need the floor but just in case
+				local isPositive = x > half_width
+				local distance = math.abs(half_width - x)
+				if isPositive then
+					distance = math.abs(half_width + 1 - x) -- account for the one off
+				end
+				local value = 1
+				if distance <= 4 then
+					-- value is 1
+					value = 1
+				elseif distance <= 8 then
+					value = 8
+				elseif distance <= 13 then
+					value = 64
+				end
+				if not isPositive then
+					value = - value -- make it negative!
+				end
+				choice.count = value
+			end
+		end
+	end
 end
 
 function get_sorted_items(filter_characters, num_items, page_num, has_items_stored)

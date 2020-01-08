@@ -1857,7 +1857,7 @@ function draw_sorting_menu(m, item_list_function, fetch_settings)
 		-- FIX THIS (then add a number choosing screen and then hit send and it's done!) Return this pick to the main display function for it to call the number picker
 		-- loop over the items to display!
 		m.setBackgroundColor(colors.white)
-		for i = 2, fetch_settings.height - 3 do
+		for i = 2, fetch_settings.height - 2 do
 			m.setCursorPos(1, i)
 			m.clearLine()
 		end

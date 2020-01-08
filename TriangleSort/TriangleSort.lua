@@ -2013,10 +2013,13 @@ function draw_sorting_menu(m, item_list_function, fetch_settings)
 					-- get the character from the alphabet!
 					c = string.sub("ABCDEFGHIJKLMNOPQRSTUVWXYZ", i, i)
 				end
-				if c == menu_settings.filter_character and fetch_settings.width > 26 then
-					m.setBackgroundColor(colors.green)
-					m.setTextColor(colors.white)
-					m.write(c) -- so that we don't print when it's not wide enough
+				if string.lower(c) == string.lower(menu_settings.filter_character) then
+					if fetch_settings.width > 26 then
+						-- otherwise you don't have room to draw it
+						m.setBackgroundColor(colors.green)
+						m.setTextColor(colors.white)
+						m.write(c) -- so that we don't print when it's not wide enough
+					end
 				else
 					m.setBackgroundColor(colors.lightGray)
 					m.setTextColor(colors.black)

@@ -1726,13 +1726,80 @@ function display_display()
 		while running do
 			local choice = draw_sorting_menu(m, sorted_items_function, fetch_settings)
 			-- then go use that choice in a choice menu! Select how many to fetch probably! Magic stuff!
-			print("Made choice! " .. tostring(choice))
+			-- print("Made choice! " .. tostring(choice))
+			if choice.name ~= nil then
+				local count = item_count_menu(m, choice, fetch_settings)
+			end
 			sleep(1)
 		end
 	end
 end
 
-function get_sorted_items(filter_characters, num_items, page_num)
+function item_count_menu(m, choice, fetch_settings)
+	-- draw the menu for how many of the item you want to get.
+	-- show a back button, show a fetch button, show the names, and set the choice when you submit etc.
+	-- +1  +8  +64 
+	local myTimer = os.startTimer(5)
+	local menu_settings = {exit = false, screen_middle_height = math.floor(fetch_settings.height/2),
+				all_button_width = }
+	while running do
+		-- draw the current count! the max count, and the item name, and the buttons etc.
+
+		m.setBackgroundColor(colors.white)
+		m.clear() -- clear everything to light gray
+
+
+		-- draw_rectangle(m, x, y, width, height, color)
+		-- center_string_coords(m, s, x, y, width, height, bg_color, text_color)
+		-- draw the item name!
+		center_string_coords(m, "Fetching:", 1, math.floor(screen_middle_height/2)-1, fetch_settings.width, 1, colors.white, colors.black)
+		center_string_coords(m, choice[1], 1, math.floor(screen_middle_height/2), fetch_settings.width, 1, colors.white, colors.black)
+		local num_string = tostring(choice.count)
+		-- fix DISPLAY AND USE MAX ITEMS AVAILABLE. FIX THIS. It's not worth it at the moment I don't want to deal with it :P
+		center_string_coords(m, num_string, 1, menu_settings.screen_middle_height - 1, fetch_settings.width, 1, colors.white, colors.black)
+		center_string_coords(m, " -64  -8  -1  +1  +8  +64 ", 1, menu_settings.screen_middle_height, fetch_settings.width, 1, colors.lightGray, colors.black)
+		
+
+		-- now draw the submit and the quit button!
+		-- cancel button
+		draw_rectangle(m, 1, fetch_settings.height - 5, math.floor((fetch_settings.width-1)/2), 5, colors.lightGray)
+		center_string_coords(m, "Cancel", 1, fetch_settings.height - 5, math.floor((fetch_settings.width-1)/2), 5, colors.lightGray, colors.black)
+		-- submit button
+		draw_rectangle(m, fetch_settings.width - math.floor((fetch_settings.width-1)/2), fetch_settings.height - 5, math.floor((fetch_settings.width-1)/2), 5, colors.lightGray)
+		center_string_coords(m, "Fetch", fetch_settings.width - math.floor((fetch_settings.width-1)/2), fetch_settings.height - 5, math.floor((fetch_settings.width-1)/2), 5, colors.lightGray, colors.black)
+
+
+		local event, param1, param2, param3, param4, param5 = os.pullEvent()
+		if event == "timer" then
+			-- check if it's mine just for the fun of it? If it is, start a new one. In the meantime, refresh!
+			if param1 == myTimer then
+				print("Resetting my timer!")
+				myTimer = os.startTimer(5)
+				refresh_all_network() -- maybe just refresh items and destinations but shhh it works for now
+			end
+		elseif event == "monitor_touch" then
+			-- deal with the button presses!
+			handle_item_count_menu_event(m, param2, param3, choice, fetch_settings, menu_settings)
+		elseif event == "mouse_click" and not fetch_settings.using_monitor then
+			-- mouse click! may be useful if we're on a pocket computer etc.
+			-- only use these clicks if we're displaying on our computer screen
+			handle_item_count_menu_event(m, param2, param3, choice, fetch_settings, menu_settings)
+		end
+
+		if menu_settings.exit then
+			os.cancelTimer(myTimer)
+			return choice.count, choice
+		end
+		sleep(0)
+	end
+	os.cancelTimer(myTimer)
+end
+
+function handle_item_count_menu_event(m, x, y, choice, fetch_settings, menu_settings)
+	--
+end
+
+function get_sorted_items(filter_characters, num_items, page_num, has_items_stored)
 	-- sort the names alphabetically and have counts!
 	-- if we don't have the display name just show the item_key!
 	local iter = alphabeticalItemKeyBothDirectionsManual()
@@ -1759,7 +1826,7 @@ function get_sorted_items(filter_characters, num_items, page_num)
 		if filter_len > 0 then
 			filter_check = string.sub(string.lower(display_name), 1, filter_len)
 		end
-		if filter_check == filter_characters then
+		if filter_check == filter_characters and (not has_items_stored or item_count > 0) then
 			-- it's a valid item to display!
 			if items_to_skip > 0 then
 				items_to_skip = items_to_skip - 1
@@ -1774,7 +1841,7 @@ end
 
 function draw_sorting_menu(m, item_list_function, fetch_settings)
 	-- return the selection index!
-	local myTimer = os.startTimer(30)
+	local myTimer = os.startTimer(60)
 	local side_button_width = math.floor(fetch_settings.width/3)
 	local middle_button_width = math.floor(fetch_settings.width/3) + (fetch_settings.width % 3)
 
@@ -1795,9 +1862,10 @@ function draw_sorting_menu(m, item_list_function, fetch_settings)
 					item_list_function = item_list_function, item_display_height = item_display_height,
 					item_current_page = 1, -- so that we can check if we've changed what page we're now on!
 				}
-	menu_settings.items = menu_settings.item_list_function(menu_settings.filter_character, menu_settings.item_display_height, menu_settings.page)
+	menu_settings.items = menu_settings.item_list_function(menu_settings.filter_character, menu_settings.item_display_height, menu_settings.page, menu_settings.in_system == "In System")
 
-
+	m.setBackgroundColor(colors.lightGray)
+	m.clear() -- clear everything to light gray
 
 	while running do
 		-- print the alphabet up top for filtering!
@@ -1851,7 +1919,6 @@ function draw_sorting_menu(m, item_list_function, fetch_settings)
 		draw_rectangle(m, side_button_width+middle_button_width+1, fetch_settings.height, side_button_width, 1, colors.gray)
 		center_string_coords(m, string.sub(fetch_settings.destination, 1, side_button_width), side_button_width+middle_button_width+1, fetch_settings.height, side_button_width, 1, colors.gray, colors.white)
 
-
 		-- then draw the items to pick from, page by page! Filter them by the filter characters obviously!
 		-- have to sort them all as lowercase too because I don't want case sensitivity to mess things up
 		-- FIX THIS (then add a number choosing screen and then hit send and it's done!) Return this pick to the main display function for it to call the number picker
@@ -1885,7 +1952,7 @@ function draw_sorting_menu(m, item_list_function, fetch_settings)
 				m.setCursorPos(5, y+1)
 				m.write(tostring(menu_settings.items[y][1])) -- the display name!
 				m.setCursorPos(fetch_settings.width - 5, y+1)
-				m.write(tostring(menu_settings.items[y][3])) -- the item count!
+				m.write(tostring(menu_settings.items[y][3])) -- the item count in the system
 			end
 		end
 
@@ -1895,7 +1962,7 @@ function draw_sorting_menu(m, item_list_function, fetch_settings)
 			-- check if it's mine just for the fun of it? If it is, start a new one. In the meantime, refresh!
 			if param1 == myTimer then
 				print("Resetting my timer!")
-				myTimer = os.startTimer(30)
+				myTimer = os.startTimer(60)
 				refresh_all_network() -- maybe just refresh items and destinations but shhh it works for now
 			end
 		elseif event == "monitor_touch" then
@@ -1913,13 +1980,21 @@ function draw_sorting_menu(m, item_list_function, fetch_settings)
 			menu_settings.item_current_page = menu_settings.page
 			-- calculate the items!
 			print("Generating items")
-			menu_settings.items = menu_settings.item_list_function(menu_settings.filter_character, menu_settings.item_display_height, menu_settings.page)
+			menu_settings.items = menu_settings.item_list_function(menu_settings.filter_character, menu_settings.item_display_height, menu_settings.page, menu_settings.in_system == "In System")
 		end
 
 		if menu_settings.exit then
 			-- return early
-			print("EXIT NOT IMPLEMENTED YET I'M WORKING ON IT")
-			-- os.cancelTimer(myTimer)
+			-- print("EXIT NOT IMPLEMENTED YET I'M WORKING ON IT")
+			os.cancelTimer(myTimer)
+			if menu_settings.choice == nil then
+				menu_settings.choice = {count = 0}
+			else
+				menu_settings.max_items = menu_settings.count
+				menu_settings.count = 64 -- default number? perhaps we choose the max stack size? For now leave it as is. FIX THIS
+			end
+			menu_settings.choice.destination = fetch_settings.destination
+			return menu_settings.choice  -- may be nil, but otherwise it's something!
 		end
 	end
 	os.cancelTimer(myTimer)
@@ -1965,6 +2040,7 @@ function handle_mouse_press_on_sorting_menu(m, x, y, list_of_items, fetch_settin
 				fetch_settings.in_system = "In System"
 			end
 			menu_settings.page = 1 -- also reset to the first page so we know that we should re-sort the items!
+			menu_settings.item_current_page = -1 -- regenerate the page of items!
 		else
 			-- the destination button!
 			print("Next button pressed")
@@ -2003,7 +2079,12 @@ function handle_mouse_press_on_sorting_menu(m, x, y, list_of_items, fetch_settin
 		menu_settings.item_current_page = -1 -- regenerate the page of items!
 	else
 		-- picked an item probably! Do stuff!
-		print("Picked an item but not implemented yet, sorry!")
+		-- print("Picked an item but not implemented yet, sorry!")
+		if y - 1 <= #menu_settings.items then
+			-- it's outside the number of items that we have displayed!
+			menu_settings.choice = menu_settings.items[y-1]
+			menu_settings.exit = true
+		end
 	end
 end
 
@@ -2020,9 +2101,12 @@ end
 
 function center_string_coords(m, s, x, y, width, height, bg_color, text_color)
 	-- write the string in the center of those coordinates
+	s = tostring(s)
 	m.setBackgroundColor(bg_color)
 	m.setTextColor(text_color)
-	m.setCursorPos(x, math.floor((y+y+height)/2)) -- center vertically. For now I don't care enough about centering horizontally
+	local centered_x = math.floor((x+x+width)/2) - math.floor((#s+1) / 2)
+	-- center the text horizontally! This gets the middle of the box, then subtracts half the text length
+	m.setCursorPos(centered_x, math.floor((y+y+height)/2)) -- center vertically.
 	m.write(string.sub(s, 1, width))
 end
 

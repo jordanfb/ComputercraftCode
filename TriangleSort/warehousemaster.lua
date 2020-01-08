@@ -57,7 +57,7 @@ Then you have basically everything.
 Current todo as of 1/5/2020 12:38 pm
 -- DONE: need to subtract the items from our stored item table that we've told the turtle to retrieve
 -- DONE: need to add a secondary fetch for all the items that we weren't able to fit in that cache/that turtle/whatever so it can send another turtle.
-need to make the turtle go fetch the items
+-- DONE: need to make the turtle go fetch the items
 need to make the turtle tell the master if it hasn't been able to extract all those items so the master can make another fetch request
 make it account for time for item travel. Can we assume that after the computer/server restarted it was long enough for the items to traverse?
 	I'm not sure, maybe hold all the fetching for a minute or so? That'll be annoying to test. I guess we should just continue on as though time never
@@ -65,9 +65,40 @@ make it account for time for item travel. Can we assume that after the computer/
 make it account for emptying caches with item travel! :P
 
 
+Cache emptying plan:
+rednet thread receives request that would empty cache.
+It calculates the amount of time to reach that cache and then pauses inputting items for that long.
+This also needs to handle rebooting unfortunately, which means if it reboots it waits the whole amount of time all over again just to be sure.
+Before it waits that amount of time it spawns a turtle, and tells that turtle it has to request permission to empty items.
+If the turtle asks before that time is up the turtle must wait until we are ready and then ask again.
+When we are ready and the turtle asks us if we're ready we tell it yes. We are. Then we wait until it tells us it's done before allowing items
+to flow again. That is the point at which we empty the cache in our calculations.
 
-check the version plan :P
-Test out the update ticker display display and see if it works!
+We need to be able to interupt the other thread when it's sucking in items so we don't suck one in when we don't mean to.
+We also need to recover if we reboot in the middle, so we have to both keep track of the time we need to wait and store that in a file somewhere.
+We also need to store a list of all the caches we're emptying at this particular point so that we can empty multiple caches at once but not exit early.
+If we wanted to speed things up slightly we can store the last time an item was input to the system so we know we can wait that amount less time.
+Obviously if it reboots it still has to wait the full amount of time since we don't know when we rebooted.
+That's pretty solid and pretty easy all things considered.
+It means that we'd stop inputting items for about two minutes every once in a while, so we should probably make a couple chests of space in front of the
+storagemaster I'm forgetting the word but like places to store backlog? Like the area of storage before a machine that's its buildup? Like a cache? or a queue?
+I'm not sure... But extra chests before the warehousemaster so that we can empty the main sorting system and not develop a backlog there.
+
+
+Cache emptying steps:
+-- DONE: calculate time for items to their caches
+test turtles that need to check in with the master before getting items by implementing the rednet and having it wait a few seconds before saying yes
+	in order to test this part quickly
+figure out which fetch requests are going to empty a cache
+save and load that you're going to empty a cache and the amount of time and time started waiting etc. and start waiting and whether or not you should be inputting items (interupting the other thread to make sure it stops)
+wait that amount of time before saying that you're good to gather the items. Perhaps this is handled by the input_item thread starting a timer and waiting for it in a different function?
+	that would be very handy and give that thread something to do. Plus then we know for sure that we've stopped inputting items and in a nice way too.
+Then when the turtle reports back that it's finished we check to make sure we aren't waiting for any other turtles to empty caches, and if so, we go back to normal sorting!
+Should we gather all our emptying cache requests to handle at once? If we have to empty two caches and we only have one turtle do we wait until the turtle
+	gets placed in the world to pause items? Or do we have two requests that will empty the cache so we start pausing and don't stop until we have both requests.
+	The second one makes more sense to me (where we handle them all as soon as they come in) because otherwise we're going to need to wait the full two minutes all over again. As it is that may happen
+	but only if we get one order right after the other one ends, and that would still be an issue if we waited for the turtle to be in the world before pausing the items again.
+	This means that we have to save the list of caches that are going to be emptied, but at this point we may be having a file dedicated to saving and loading cache the cache empty status.
 ]]--
 
 

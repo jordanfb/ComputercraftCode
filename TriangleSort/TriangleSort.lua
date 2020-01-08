@@ -1888,7 +1888,7 @@ function handle_item_count_menu_event(m, x, y, choice, fetch_settings, menu_sett
 				local half_width = math.floor(fetch_settings.width / 2)+1
 				local isPositive = x > half_width
 				local distance = math.abs(half_width - x)
-				local value = 1
+				local value = 0
 				if distance <= 4 then
 					-- value is 1
 					value = 1
@@ -1909,7 +1909,7 @@ function handle_item_count_menu_event(m, x, y, choice, fetch_settings, menu_sett
 				if isPositive then
 					distance = math.abs(half_width + 1 - x) -- account for the one off
 				end
-				local value = 1
+				local value = 0 -- if you're farther away than the edges of 64 then the value is 0
 				if distance <= 4 then
 					-- value is 1
 					value = 1

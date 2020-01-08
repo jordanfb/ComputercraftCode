@@ -1768,9 +1768,9 @@ function item_count_menu(m, choice, fetch_settings)
 		-- draw_rectangle(m, x, y, width, height, color)
 		-- center_string_coords(m, s, x, y, width, height, bg_color, text_color)
 		-- draw the item name!
-		center_string_coords(m, "Fetching:", 1, math.floor(menu_settings.screen_middle_height/2)-1, fetch_settings.width, 1, colors.white, colors.black)
+		center_string_coords(m, "Fetching: ", 1, math.floor(menu_settings.screen_middle_height/2)-1, fetch_settings.width, 1, colors.white, colors.black)
 		center_string_coords(m, choice[1], 1, math.floor(menu_settings.screen_middle_height/2), fetch_settings.width, 1, colors.white, colors.black)
-		center_string_coords(m, "Sending to:" .. tostring(fetch_settings.destination), 1, math.floor(menu_settings.screen_middle_height/2)+1, fetch_settings.width, 1, colors.white, colors.black)
+		center_string_coords(m, "Sending to: " .. tostring(fetch_settings.destination), 1, math.floor(menu_settings.screen_middle_height/2)+1, fetch_settings.width, 1, colors.white, colors.black)
 
 		local num_string = tostring(choice.count)
 		-- fix DISPLAY AND USE MAX ITEMS AVAILABLE. FIX THIS. It's not worth it at the moment I don't want to deal with it :P

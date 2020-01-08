@@ -1793,6 +1793,9 @@ function graphical_item_fetch_for_pocket_computer()
 			end
 		end
 	end
+	m.setBackgroundColor(colors.black)
+	m.clear()
+	m.setCursorPos(1,1)
 end
 
 function item_count_menu(m, choice, fetch_settings)

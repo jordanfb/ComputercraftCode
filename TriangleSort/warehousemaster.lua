@@ -892,7 +892,10 @@ function add_item_to_storage(item_key, item_count)
 		end
 	end
 	BuildItemsStoredToSlotTable()
-	send_item_storage_updates(item_key, item_count, itemsStored[item_key].count) -- send an update to computers that are subscribed!
+	if itemsStored[item_key] ~= nil then
+		-- if we're actually storing it and not just sending it to the crypt
+		send_item_storage_updates(item_key, item_count, itemsStored[item_key].count) -- send an update to computers that are subscribed!
+	end
 end
 
 function sort_current()

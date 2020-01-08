@@ -1740,12 +1740,17 @@ function display_display()
 						broadcast_including_self(packet)
 						fetch_items_from_random_storage(key, count, false)
 						print("Fetching " .. tostring(key) .. "  " .. tostring(count))
+						m.setBackgroundColor(colors.white)
+						m.clear()
+						center_string_coords(m, "Sent Request!", 1, 1, fetch_settings.width, fetch_settings.height, colors.white, colors.black)
+						sleep(2.5)
+						m.clear()
 					else
 						print("Error fetching " .. tostring(key) .. " couldn't make item table")
 					end
 				end
 			end
-			sleep(1)
+			sleep(0)
 		end
 	end
 end

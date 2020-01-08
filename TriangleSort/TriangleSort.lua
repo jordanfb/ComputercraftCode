@@ -1740,8 +1740,7 @@ function item_count_menu(m, choice, fetch_settings)
 	-- show a back button, show a fetch button, show the names, and set the choice when you submit etc.
 	-- +1  +8  +64 
 	local myTimer = os.startTimer(5)
-	local menu_settings = {exit = false, screen_middle_height = math.floor(fetch_settings.height/2),
-				all_button_width = }
+	local menu_settings = {exit = false, screen_middle_height = math.floor(fetch_settings.height/2)}
 	while running do
 		-- draw the current count! the max count, and the item name, and the buttons etc.
 
@@ -1758,7 +1757,7 @@ function item_count_menu(m, choice, fetch_settings)
 		-- fix DISPLAY AND USE MAX ITEMS AVAILABLE. FIX THIS. It's not worth it at the moment I don't want to deal with it :P
 		center_string_coords(m, num_string, 1, menu_settings.screen_middle_height - 1, fetch_settings.width, 1, colors.white, colors.black)
 		center_string_coords(m, " -64  -8  -1  +1  +8  +64 ", 1, menu_settings.screen_middle_height, fetch_settings.width, 1, colors.lightGray, colors.black)
-		
+
 
 		-- now draw the submit and the quit button!
 		-- cancel button

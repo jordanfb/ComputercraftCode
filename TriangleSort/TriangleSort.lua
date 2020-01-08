@@ -1939,6 +1939,7 @@ function get_sorted_items(filter_characters, num_items, page_num, has_items_stor
 		-- it's a global match! Include everything!
 		filter_len = 0
 	end
+	print("Has items stored " .. tostring(has_items_stored))
 	local filter_characters = string.lower(filter_characters) -- make it lowercase!
 	local filter_check = filter_characters
 	while #display_items < num_items do

@@ -78,6 +78,9 @@ local width = 8
 local depth = 16
 local height = 1
 
+local item_speed_per_pipe_block = 1 -- for the advanced servos I have it's 1, for simpler servos it's .5 (in regular itemducts)
+local extra_pipes_into_the_system = 5 -- how many pipes an item will encounter from the turtle before reaching 1,1,1
+local pipes_per_layer_change = 5 -- the number of extra pipes an item will encounter when going up a layer to get to 1,1 of its layer. This is a guess since I haven't built it yet...
 
 local settingsSaveFile = "storagesettings.txt"
 local currentActivitySaveFile = "currentActivity.txt"
@@ -140,6 +143,11 @@ running = true
 local rednet_message_id = 0
 local received_rednet_messages = {}
 
+local input_items = true -- this is used when emptying caches!
+local pause_input_from_time = 0 -- used to pause inputing chests while emptying a cache so that we don't have race conditions!
+-- we're going to need to calculate the amount of time to let the pipes clear then also how much time for a fetchbot to get there
+local pause_input_until_time = 0
+
 
 function initialize()
 	print("Starting Warehouse Master v0.1")
@@ -192,6 +200,13 @@ function saveItemsStored()
 	end
 	f.write(textutils.serialize(itemsStoredBySlot));
 	f.close();
+end
+
+function calculate_time_to_cache_index(cache_index)
+	-- calculate the time in seconds it will take for an item to get to the cache
+	-- at its simplest this will be used to pause inputting items until we can clear a cache, then continue afterwards!
+	local t = extra_pipes_into_the_system + pipes_per_layer_change + convert_index_to_pipe_on_layer(cache_index) -- the number of pipes it has to go through
+	return t * item_speed_per_pipe_block
 end
 
 function SaveTableToFile(table, filename)
@@ -353,6 +368,29 @@ function convert_index_to_pipe(cache_index)
 
 	-- now we know the 1 indexed coordinates, so we can convert that to actual index
 	return (cache_depth-1) * width    +    (cache_height-1) * fake_caches_per_level    +    cache_width
+end
+
+function convert_index_to_pipe_on_layer(cache_index)
+	-- cache index is the nicely ordered, left to right, front to back, bottom to top
+	-- pipe_order is the snakey method that zigzags all over the place
+	-- this is the pipe order on its particular layer, used for calculating time for items to travel
+	local modded = cache_index
+	while modded > fake_caches_per_level do
+		modded = modded - fake_caches_per_level -- this is ugly but I don't want to think about mods and off by one errors at the moment
+	end
+	local cache_width = 0
+	if ((modded-1) % (width * 2)) < width then
+		-- then it's on the first half of the pipe which goes +x
+		cache_width = ((modded-1)%width) + 1
+	else
+		-- it's on the second half of the pipe that goes -x
+		cache_width = width - (((modded-1)%width))
+	end
+	local cache_height = math.floor((cache_index-1) /fake_caches_per_level)+1
+	local cache_depth = math.floor((modded-1)/width) + 1 -- 1 indexed
+
+	-- now we know the 1 indexed coordinates, so we can convert that to actual index
+	return (cache_depth-1) * width    +    cache_width
 end
 
 function convert_index_to_cache_coordinates(cache_index)
@@ -889,6 +927,8 @@ function add_item_to_storage(item_key, item_count)
 			itemsStoredBySlot[v.cache_index].item = item_key
 			itemsStoredBySlot[v.cache_index].count = itemsStoredBySlot[v.cache_index].count + v.count
 			print("item: " ..item_key .. " added to cache " .. v.cache_index .. " with count " .. itemsStoredBySlot[v.cache_index].count)
+			-- temporary print how long it'll take to get there!
+			print("Storing " .. item_key .. " will take " .. tostring(calculate_time_to_cache_index(v.cache_index)) .. " seconds")
 		end
 	end
 	BuildItemsStoredToSlotTable()
@@ -917,12 +957,13 @@ function sort_input()
 	while running do
 		-- input items from the chest in front of it, then if they deserve to go into storage store them. If they don't then don't
 		-- turtle.select(1)
-		while turtle.suck() do
+		while turtle.suck() and input_items do
 			-- it's sorting time!
 			if (sort_current()) then
 				saveItemsStored() -- save the changes you've made!
 			end
 			-- turtle.select(1)
+			sleep(0) -- just make sure it pauses in here
 		end
 		sleep(2)
 	end

@@ -747,6 +747,9 @@ function fetch_items()
 	pathfindToFacing(mission.item.x, mission.item.y, mission.item.z, mission.item.f)
 	organize_inventory() -- so there's space to input the items
 	-- if you have to wait for permission to gather items then do it here!
+	if has_permission_to_empty_cache then
+		print("Doesn't need permission to empty cache")
+	end
 	while not has_permission_to_empty_cache do
 		-- send a request every while until you're allowed to empty!
 		local packet = {packet = "request_permission_empty_cache", data = {index = mission.item.index}}
@@ -897,6 +900,7 @@ function parse_mission_variables()
 	if mission.refuel_to_level ~= nil then
 		goalFuelLevel = mission.refuel_to_level
 	end
+	has_permission_to_empty_cache = not mission.item.wait_for_confirmation
 end
 
 function receive_rednet_input()

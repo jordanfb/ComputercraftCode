@@ -118,6 +118,7 @@ local currentActivitySaveFile = "currentActivity.txt"
 local itemStorageDataSaveFile = "itemsStored.txt"
 local fetchRequestsFilename = "fetchRequests.txt"
 local fetchBotStatusFilename = "fetchBotsStatus.txt"
+local clearing_cache_filename = "clearingCacheStatus.txt"
 
 local tunnel_separation = 4 -- spaces between tunnel holes, for pipe filled things it should be 4, for turtle filled it should be 3
 
@@ -174,11 +175,11 @@ running = true
 local rednet_message_id = 0
 local received_rednet_messages = {}
 
-local input_items = true -- this is used when emptying caches!
-local pause_input_from_time = 0 -- used to pause inputing chests while emptying a cache so that we don't have race conditions!
+-- this is used when emptying caches!
+-- used to pause inputing chests while emptying a cache so that we don't have race conditions!
 -- we're going to need to calculate the amount of time to let the pipes clear then also how much time for a fetchbot to get there
-local pause_input_until_time = 0
-
+local original_clearing_cache_settings = {input_items = true, pause_input_until_time = 0, pause_input_from_time = 0, caches_to_clear = {}}
+local clearing_cache_settings = original_clearing_cache_settings
 
 function initialize()
 	print("Starting Warehouse Master v0.1")
@@ -213,12 +214,19 @@ function save_fetch_status()
 	-- save fetch_requests and fetch_bot_status
 	SaveTableToFile(fetch_requests, fetchRequestsFilename)
 	SaveTableToFile(fetch_bot_status, fetchBotStatusFilename)
+	SaveTableToFile(clearing_cache_settings, clearing_cache_filename)
 end
 
 function load_fetch_status()
 	-- load fetch_requests and fetch_bot_status
 	fetch_requests = LoadTableFromFile(fetchRequestsFilename)
 	fetch_bot_status = LoadTableFromFile(fetchBotStatusFilename)
+	clearing_cache_settings = LoadTableFromFile(clearing_cache_filename)
+	if clearing_cache_settings.input_items == nil then
+		-- we weren't able to load it so replace it with the defaults
+		clearing_cache_settings = original_clearing_cache_settings
+		print("Replaced clearing cache settings with defaults")
+	end
 end
 
 function saveItemsStored()
@@ -988,7 +996,7 @@ function sort_input()
 	while running do
 		-- input items from the chest in front of it, then if they deserve to go into storage store them. If they don't then don't
 		-- turtle.select(1)
-		while turtle.suck() and input_items do
+		while turtle.suck() and clearing_cache_settings.input_items do
 			-- it's sorting time!
 			if (sort_current()) then
 				saveItemsStored() -- save the changes you've made!

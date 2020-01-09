@@ -119,6 +119,11 @@ local output_coords = {x = width, y = depth, z = 1, f = "down"}
 local refuel_coords = {x = width+1, y = depth, z = 1, f = "down"}
 local die_coords = {x = width+3, y = depth, z = 1, f = 1} -- die coords are currently facing east
 
+
+-- cache emptying variables
+local wait_for_confirmation_timer = 5 -- start off with 5, then the packet back to us will set a better time estimate for us to wait
+local has_permission_to_empty_cache = false -- gets set to true when we're allowed to leave!
+
 -- rednet non-repeat stuff
 local rednet_message_id = 0
 local received_rednet_messages = {}
@@ -741,6 +746,14 @@ function fetch_items()
 	end
 	pathfindToFacing(mission.item.x, mission.item.y, mission.item.z, mission.item.f)
 	organize_inventory() -- so there's space to input the items
+	-- if you have to wait for permission to gather items then do it here!
+	while not has_permission_to_empty_cache do
+		-- send a request every while until you're allowed to empty!
+		local packet = {packet = "request_permission_empty_cache", data = {index = mission.item.index}}
+		broadcast_correct(packet)
+		print("Sent request for permission to empty cache")
+		sleep(wait_for_confirmation_timer)
+	end
 	while mission.item.count > 0 do
 		local amount_in_inventory = count_items_of_key(mission.item.key)
 		suck_direction(mission.item.f, math.min(mission.item.count, 64))
@@ -754,6 +767,11 @@ function fetch_items()
 			-- fix
 			break -- since we likely won't be able to finish extracting this many items without waiting forever.
 		end
+	end
+	if mission.item.wait_for_confirmation then
+		-- send a confirmation saying you gathered all the items!
+		local packet = {packet = "finished_emptying_cache", data = {index = mission.item.index}}
+		broadcast_correct(packet)
 	end
 	mission.mission = "output"
 	save_mission_to_file()
@@ -908,6 +926,17 @@ function receive_rednet_input()
 				mission = message.data
 				save_mission_to_file()
 				parse_mission_variables()
+			elseif message.packet == "send_permission_empty_cache" then
+				-- perhaps has permission to emtpy the cache!
+				if message.data.has_permission then
+					has_permission_to_empty_cache = true
+					print("Recieved permission to empty cache!")
+					wait_for_confirmation_timer = 0
+				else
+					wait_for_confirmation_timer = message.data.extra_time
+					has_permission_to_empty_cache = false
+					print("Recieved no permission to empty cache, now waiting "..tostring(wait_for_confirmation_timer).." seconds")
+				end
 			end
 		end
 	end

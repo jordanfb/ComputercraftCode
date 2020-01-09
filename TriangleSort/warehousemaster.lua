@@ -227,6 +227,16 @@ function load_fetch_status()
 		clearing_cache_settings = original_clearing_cache_settings
 		print("Replaced clearing cache settings with defaults")
 	end
+	-- check the clearing cache settings and see if we rebooted while we were waiting for something to clear!
+	-- simply move the time to now!
+	if clearing_cache_settings.pause_input_from_time > os.clock() then
+		-- we rebooted in the middle of it! oh no!
+		local wait_time = clearing_cache_settings.pause_input_until_time - clearing_cache_settings.pause_input_from_time
+		clearing_cache_settings.pause_input_until_time = os.clock() + wait_time
+		clearing_cache_settings.pause_input_from_time = os.clock()
+		print("Fixed clearing cache timers after reboot!")
+		save_fetch_status() -- save these changes!
+	end
 end
 
 function saveItemsStored()
@@ -544,7 +554,6 @@ function WhereWillItemsEndUp(item, count)
 		end
 	end
 	if amount_left > 0 then
-		-- print("MORE LEFT OH NO FIX ERROR") -- FIX this please, this will happen if we run out of caches
 		print("RAN OUT OF CACHE SPACE! STORING "..tostring(amount_left).." ITEMS IN THE CRYPT")
 		stored_locations[#stored_locations + 1] = {cache_index = -1, count = amount_left}
 	end
@@ -629,6 +638,45 @@ function receive_rednet_input()
 				if verbose then
 					print("Reset rednet messages for "..tostring(sender_id))
 				end
+			elseif message.packet == "request_permission_empty_cache" then
+				-- a fetch turtle is requesting permission to empty a cache. Do we give it to them?
+				-- this whole thing could be made more efficient. FIX THIS
+				print("Recieved request for permission to empty cache")
+				-- should probably double check that we're actually pausing input... shhhh FIX THIS
+				if os.clock() > clearing_cache_settings.pause_input_until_time then
+					-- say yes!
+					local data = {has_permission = true, extra_time = 0}
+					local packet = {packet = "send_permission_empty_cache", data = data}
+					send_correct(sender_id, packet)
+				else
+					-- say no! not enough time has passed
+					local extra = clearing_cache_settings.pause_input_until_time - os.clock() + 1 -- extra time
+					local data = {extra_time = extra, has_permission = false}
+					local packet = {packet = "send_permission_empty_cache", data = data}
+					send_correct(sender_id, packet)
+				end
+			elseif message.packet == "finished_emptying_cache" then
+				-- a fetch turtle emptied their cache, so we can let the pipes run again if that's the only turtle that's waiting for it
+				-- this could be made more efficient FIX THIS
+				print("Recieved confirmation fetch turtle emptied cache")
+				local index = message.data.index
+				local found = false
+				for i, v in ipairs(clearing_cache_settings.caches_to_clear) do
+					if v == index then
+						table.remove(clearing_cache_settings.caches_to_clear, i)
+						found = true
+						break
+					end
+				end
+				if not found then
+					print("ERROR! Emptied cache request not found!") -- oh dear this would be bad...
+				end
+				if #clearing_cache_settings.caches_to_clear == 0 then
+					-- we're ready to resume normal operations
+					print("Resumed inputting items")
+					clearing_cache_settings.input_items = true
+				end
+				save_fetch_status()
 			elseif message.packet == "update_network" then
 				-- update from github!
 				shell.run("github clone jordanfb/ComputercraftCode")
@@ -722,8 +770,7 @@ function get_cache_coords(item_key, amount_requested)
 	-- prioritize the farthest away cache that has enough items to fufil the request? That way when we eventually empty caches we'll move things towards
 	-- if none of them can handle it then it should take the farthest one that's larger than 1? I guess?
 	-- the front of the sorting machine which makes sense to me.
-	-- FIX this will require 1 extra item over the amount requested because we can't handle emptying caches at the moment
-	amount_requested = amount_requested + 1
+	amount_requested = amount_requested
 	local items = itemsStored[item_key]
 	if items == nil then
 		-- we don't have any stored, return nil
@@ -756,9 +803,8 @@ function get_cache_coords(item_key, amount_requested)
 		end
 	end
 
-	if bestLocation.count <= 1 then
+	if bestLocation.count <= 0 then
 		-- we don't have enough of the item
-		-- FIX this when we allow clearing caches
 		return nil
 	end
 
@@ -822,10 +868,44 @@ data = {
 						data.item.z = cache_coords.z
 						data.item.f = cache_coords.f
 						data.item.index = cache_coords.index
-						data.item.count = math.min(math.min(v.item.count, cache_coords.count - 1), max_items_stored_in_turtle)
+						data.item.count = math.min(math.min(v.item.count, cache_coords.count), max_items_stored_in_turtle)
 						-- for now just don't allow removing items entirely so we don't
 						-- run into the problem of race conditions. I'll have to FIX it later
 						local amount_left_to_fetch = v.item.count - data.item.count -- that's how many left to fetch
+
+						local empties_cache = data.item.count == cache_coords.count
+						-- if it empties the cache then the turtle needs to ask the master for confirmation that the pipes are empty before gathering the item
+						data.item.wait_for_confirmation = empties_cache
+						if empties_cache then
+							print("Recieved a request that will empty the cache!")
+							-- we need to stop inputting items!!!
+							-- calculate the amount of time it'll take for the last possible item to reach its destination then reset
+							-- FIX THIS
+							local time_to_clear = calculate_time_to_cache_index(cache_coords.index) + 1
+							if clearing_cache_settings.input_items then
+								-- give it the full amount of time to clear items!
+								clearing_cache_settings.pause_input_from_time = os.clock()
+								clearing_cache_settings.pause_input_until_time = os.clock() + time_to_clear
+								clearing_cache_settings.input_items = false
+								print("Stopping items")
+							else
+								-- we're already pausing for someone else so figure out how much more time we need to pause than this then add it on
+								local paused_amount = os.clock() - clearing_cache_settings.pause_input_from_time
+								if paused_amount >= time_to_clear then
+									-- we're set and we can just add the item on as valid to clear!
+								else
+									-- add on extra time probably?
+									-- this means that it'll delay the other items too, which I don't want :( I guess that means that I should FIX THIS
+									-- but for now I don't care enough :/
+									clearing_cache_settings.pause_input_until_time = clearing_cache_settings.pause_input_from_time + time_to_clear
+									-- wait longer!
+								end
+								print("We've already stopped items so now we're just waiting a bit longer")
+							end
+							clearing_cache_settings.caches_to_clear[#clearing_cache_settings.caches_to_clear+1] = cache_coords.index
+							-- add the location to the list of caches that we're emptying so we know not to allow items until it's time
+							save_fetch_status()
+						end
 
 						-- v.status = "assigned"
 						v.status = "done" -- it'll just delete it now which is fine I think. later I want status though FIX THIS
@@ -996,7 +1076,7 @@ function sort_input()
 	while running do
 		-- input items from the chest in front of it, then if they deserve to go into storage store them. If they don't then don't
 		-- turtle.select(1)
-		while turtle.suck() and clearing_cache_settings.input_items do
+		while clearing_cache_settings.input_items and turtle.suck() do
 			-- it's sorting time!
 			if (sort_current()) then
 				saveItemsStored() -- save the changes you've made!
@@ -1004,7 +1084,22 @@ function sort_input()
 			-- turtle.select(1)
 			sleep(0) -- just make sure it pauses in here
 		end
-		sleep(2)
+		if not clearing_cache_settings.input_items then
+			-- time yourself until you're ready to empty the cache!
+			while os.clock() < clearing_cache_settings.pause_input_until_time do
+				local length = clearing_cache_settings.pause_input_from_time - clearing_cache_settings.pause_input_until_time
+				sleep(math.max(5, length/2))
+			end
+			-- if os.clock() > clearing_cache_settings.pause_input_until_time then
+			-- 	-- set the allowed to clear cache flag to true!
+			-- end
+			while not clearing_cache_settings.input_items do
+				sleep(5) -- sleep 5 seconds while waiting to empty the cache I guess?
+			end
+			sleep(0)
+		else
+			sleep(2) -- wait some time for more items to come in
+		end
 	end
 end
 

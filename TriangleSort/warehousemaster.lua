@@ -87,18 +87,39 @@ I'm not sure... But extra chests before the warehousemaster so that we can empty
 
 Cache emptying steps:
 -- DONE: calculate time for items to their caches
-test turtles that need to check in with the master before getting items by implementing the rednet and having it wait a few seconds before saying yes
-	in order to test this part quickly
-figure out which fetch requests are going to empty a cache
-save and load that you're going to empty a cache and the amount of time and time started waiting etc. and start waiting and whether or not you should be inputting items (interupting the other thread to make sure it stops)
-wait that amount of time before saying that you're good to gather the items. Perhaps this is handled by the input_item thread starting a timer and waiting for it in a different function?
-	that would be very handy and give that thread something to do. Plus then we know for sure that we've stopped inputting items and in a nice way too.
-Then when the turtle reports back that it's finished we check to make sure we aren't waiting for any other turtles to empty caches, and if so, we go back to normal sorting!
-Should we gather all our emptying cache requests to handle at once? If we have to empty two caches and we only have one turtle do we wait until the turtle
-	gets placed in the world to pause items? Or do we have two requests that will empty the cache so we start pausing and don't stop until we have both requests.
-	The second one makes more sense to me (where we handle them all as soon as they come in) because otherwise we're going to need to wait the full two minutes all over again. As it is that may happen
-	but only if we get one order right after the other one ends, and that would still be an issue if we waited for the turtle to be in the world before pausing the items again.
-	This means that we have to save the list of caches that are going to be emptied, but at this point we may be having a file dedicated to saving and loading cache the cache empty status.
+-- DONE: test turtles that need to check in with the master before getting items by implementing the rednet and having it wait a few seconds before saying yes
+		in order to test this part quickly
+-- DONE: figure out which fetch requests are going to empty a cache
+-- DONE: save and load that you're going to empty a cache and the amount of time and time started waiting etc. and start waiting and whether or not you should be inputting items (interupting the other thread to make sure it stops)
+-- DONE: wait that amount of time before saying that you're good to gather the items. Perhaps this is handled by the input_item thread starting a timer and waiting for it in a different function?
+		that would be very handy and give that thread something to do. Plus then we know for sure that we've stopped inputting items and in a nice way too.
+-- DONE: Then when the turtle reports back that it's finished we check to make sure we aren't waiting for any other turtles to empty caches, and if so, we go back to normal sorting!
+-- DONE: Should we gather all our emptying cache requests to handle at once? If we have to empty two caches and we only have one turtle do we wait until the turtle
+		gets placed in the world to pause items? Or do we have two requests that will empty the cache so we start pausing and don't stop until we have both requests.
+		The second one makes more sense to me (where we handle them all as soon as they come in) because otherwise we're going to need to wait the full two minutes all over again. As it is that may happen
+		but only if we get one order right after the other one ends, and that would still be an issue if we waited for the turtle to be in the world before pausing the items again.
+		This means that we have to save the list of caches that are going to be emptied, but at this point we may be having a file dedicated to saving and loading cache the cache empty status.
+
+Possible Improvements:
+Make a "special machine monitor" which waits for no redstone signal (and probably an extra couple seconds or so in the case of the crafting machine) from the machine before inserting a custom order.
+Use the special machine monitor in conjunction with a crafting turtle that recieves custom destinations and crafts items!
+Save and load the custom destinations on the main sorting line between restarts. I'm not sure why I haven't done that yet.
+Make a multi-computer rednet system for storing and retreiving data and use it for item names and recipes. Perhaps depending on if there's only a file size limit and not a ram limit but we could load files from different floppy disks to get around the storage limit.
+Recursive recipe requesting/crafting
+Add a crafting button to the fetch GUI program for turtles and for the monitors
+	add a simple line or two on the display for how many items will be fetched and how many will be crafted
+Add a "max amount stored" button and item count display to the fetch item screen
+Speed up the cache emptying by splitting up which cache needs to wait for how long.
+Speed up the cache emptying by figuring out ACTUALLY how long the warehouse fetchbot needs to wait inbetween checking because as it is it's waiting extra long adding delays
+Speed up cache emptying by accounting for the additional time that we haven't put anything into the system for (doesn't work and has to reset when restarted but that's no biggie)
+Add more turtles to the fetch system
+Make a "fetch only" portable pocket computer for the average consumer. Perhaps make it check in with the master computer and update if the master computer says it should? Similar to the warehouse fetch bot updates
+Make those pocket computers and ender pouches for everyone on the server!
+Make physical setups for a couple places around the server. Nick's house, Spawn, and Schuyler's setup?
+Add systems that can be turned on when certain item counts get too low. They could either subscribe to sorting updates and monitor a certain item then when it gets too low update or simply request the item list every once in a while.
+		that would be handy for glass and cobblestone and wood!
+Add systems that will automatically request an item gets crafted when the count of an item gets too low i.e. torches or itemducts or food items.
+
 ]]--
 
 

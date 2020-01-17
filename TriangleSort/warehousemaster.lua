@@ -841,7 +841,8 @@ function assign_fetch_turtle(rednet_id)
 	-- local fetch_bot_status = {} -- rednet_id = {updated = true, current_mission=fetch_request[whatevermission]}
 	if fetch_bot_status[rednet_id] == nil then
 		-- add it to the list!
-		fetch_bot_status[rednet_id] = {updated = true, mission = nil, rednet_id = rednet_id}
+		fetch_bot_status[rednet_id] = {updated = false, mission = nil, rednet_id = rednet_id}
+		print("Got here 1")
 		save_fetch_status()
 	end
 
@@ -925,6 +926,7 @@ data = {
 							end
 							clearing_cache_settings.caches_to_clear[#clearing_cache_settings.caches_to_clear+1] = cache_coords.index
 							-- add the location to the list of caches that we're emptying so we know not to allow items until it's time
+							print("Got here 2")
 							save_fetch_status()
 						end
 
@@ -959,6 +961,7 @@ data = {
 							table.insert(fetch_requests, new_request, i+1)
 						end
 						-- save fetchbot status and new request!
+						print("Got here 3")
 						save_fetch_status()
 						return true -- we've found what it should do so we've told it what to do!
 					end
@@ -988,6 +991,7 @@ data = {
 	send_correct(rednet_id, packet)
 	fetch_bot_status[rednet_id].updated = true -- you told them to update!
 	fetch_bot_status[rednet_id].mission = data -- assign the current mission
+	print("Got here 4")
 	save_fetch_status()
 	return false -- didn't give a good mission
 end
@@ -1037,6 +1041,7 @@ function updateTurtleSpawning()
 		table.remove(fetch_requests, fetching_requests_to_remove[i])
 	end
 	if #fetching_requests_to_remove > 0 then
+		print("Got here 5")
 		save_fetch_status() -- save it after removing fetched items
 	end
 end

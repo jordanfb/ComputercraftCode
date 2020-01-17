@@ -5,3 +5,5 @@ This is a collection of lua code I use for computercraft and CC:Tweaked purposes
 
 I've found this is a useful repo to use to get it on the turtles: https://github.com/eric-wieser/computercraft-github
 That can be installed with: pastebin run p8PJVxC4
+
+cp ComputercraftCode/TriangleSort/warehousefetchstartup.lua startup.lua

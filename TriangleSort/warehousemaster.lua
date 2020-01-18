@@ -839,6 +839,7 @@ function assign_fetch_turtle(rednet_id)
 	-- assign the turtle to a mission or tell it to return to base
 	-- if we aren't tracking that bot already then add it to our list of bots to track
 	-- local fetch_bot_status = {} -- rednet_id = {updated = true, current_mission=fetch_request[whatevermission]}
+	print("rednet id of turtle: " .. tostring(rednet_id))
 	if fetch_bot_status[rednet_id] == nil then
 		-- add it to the list!
 		fetch_bot_status[rednet_id] = {updated = false, mission = nil, rednet_id = rednet_id}

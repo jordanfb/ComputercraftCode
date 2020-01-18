@@ -939,7 +939,7 @@ data = {
 						send_correct(rednet_id, packet)
 						-- print("Sent to " .. tostring(rednet_id))
 						fetch_bot_status[rednet_id].updated = true -- you told them to update!
-						fetch_bot_status[rednet_id].mission = data -- assign the current mission
+						-- fetch_bot_status[rednet_id].mission = data -- assign the current mission
 						-- subtract the items that we're fetching from the items stored
 						-- FIX to allow for emptying caches!
 						if itemsStoredBySlot[data.item.index] == nil then
@@ -991,7 +991,7 @@ data = {
 	local packet = {packet = "fetch_turtle_assign_mission", data = data}
 	send_correct(rednet_id, packet)
 	fetch_bot_status[rednet_id].updated = true -- you told them to update!
-	fetch_bot_status[rednet_id].mission = data -- assign the current mission
+	-- fetch_bot_status[rednet_id].mission = data -- assign the current mission
 	print("Got here 4")
 	save_fetch_status()
 	return false -- didn't give a good mission

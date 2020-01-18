@@ -900,7 +900,7 @@ function parse_mission_variables()
 	if mission.refuel_to_level ~= nil then
 		goalFuelLevel = mission.refuel_to_level
 	end
-	has_permission_to_empty_cache = not mission.item.wait_for_confirmation
+	has_permission_to_empty_cache = (mission.item == nil ) or (not mission.item.wait_for_confirmation)
 end
 
 function receive_rednet_input()
